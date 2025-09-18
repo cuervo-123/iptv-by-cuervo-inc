@@ -3,57 +3,98 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Mi TV Station + Anti-Clics (Fusion · Smart TV)</title>
+<title>Mi TV Station + Anti-Clics (Fusion · Smart TV · Stable)</title>
 <style>
-  :root { color-scheme: dark; --bg:#0b0f17; --fg:#e9eef5; --panel:#111826; --line:#233044; --accent:#1f9d57; --warn:#a84c32; }
+  :root {
+    color-scheme: dark;
+    --bg:#0b0f17; --fg:#e9eef5; --panel:#111826; --line:#233044; --accent:#1f9d57; --warn:#a84c32;
+    --topbar-h: 60px;  /* altura fija del header */
+    --footer-h: 28px;  /* altura fija del footer */
+  }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; }
+  html, body { height:100%; }
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    overflow:hidden;                 /* <- evita scroll del documento */
+    overscroll-behavior: contain;    /* <- evita “rebotes” que mueven todo */
+  }
 
-  header#topbar { position:sticky; top:0; z-index:30; display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:12px 16px; background:var(--panel); border-bottom:1px solid var(--line); transition:transform .25s ease, opacity .25s; }
-  header#topbar.hidden { transform:translateY(-100%); opacity:.1; pointer-events:none; }
+  /* Header fijo (NO auto-oculto para evitar jitter) */
+  header#topbar{
+    position:fixed; top:0; left:0; right:0; height:var(--topbar-h);
+    z-index:30; display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+    padding:12px 16px; background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  /* Si quieres ocultarlo manualmente con el botón 🪄 UI */
+  header#topbar.hidden { opacity:.02; pointer-events:none; }
 
   h1 { margin:0; font-size:18px; font-weight:800; }
   .row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
-  .layout { display:grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 64px); }
-  aside { border-right:1px solid var(--line); padding:12px; background:#0f1624; }
-  main { position:relative; padding:12px; }
+  .badge { padding:4px 8px; border-radius:999px; background:#1f2b3d; border:1px solid #2b3a52; font-size:12px; }
+  .muted { opacity:.85; }
+
+  /* Layout estable: ocupa exactamente el alto disponible entre header y footer */
+  .layout{
+    position:relative;
+    padding-top:var(--topbar-h);
+    height: calc(100vh - var(--topbar-h) - var(--footer-h));
+    display:grid; grid-template-columns:300px 1fr;
+    contain:layout paint; /* aísla reflow del resto */
+  }
+  aside{
+    border-right:1px solid var(--line); background:#0f1624;
+    padding:12px;
+    display:flex; flex-direction:column; gap:10px; /* <- columna estable */
+    min-height:0; /* para que flex calcule bien porcentajes */
+  }
+  main{
+    position:relative; padding:12px; min-height:0; display:flex; flex-direction:column; gap:10px;
+  }
+
   input, select, button, .btn, textarea { background:#1f2b3d; color:var(--fg); border:1px solid #2b3a52; padding:8px 10px; border-radius:8px; }
   button, .btn { cursor:pointer; font-weight:600; text-decoration:none; }
   button:hover, .btn:hover { background:#2a3a55; }
   .ok { background:#1f3d2b; border-color:#245c3c; } .ok:hover { background:#245c3c; }
-  .danger { background:#742a2a; border-color:#9b2c3c; } .danger:hover { background:#9b2c2c; }
-  .muted { opacity:.85; }
-  .badge { padding:4px 8px; border-radius:999px; background:#1f2b3d; border:1px solid #2b3a52; font-size:12px; }
+  .danger { background:#742a2a; border-color:#9b2c2c; } .danger:hover { background:#9b2c2c; }
 
-  .stack { position:relative; width:100%; height: calc(100vh - 220px); background:#000; border-radius:10px; overflow:hidden; border:1px solid var(--line); }
-  video, iframe { width:100%; height:100%; border:0; display:block; background:#000; object-fit:contain; }
+  .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { padding:4px 8px; border-radius:999px; border:1px solid #2b3a52; background:#1f2b3d; font-size:12px; cursor:pointer; }
+  .chip:hover { background:#2a3a55; }
 
-  .list { display:grid; grid-template-columns: 1fr; gap:6px; margin-top:10px; max-height: 45vh; overflow:auto; }
-  .item { display:flex; align-items:center; gap:.6rem; padding:6px 8px; background:#101b2e; border:1px solid var(--line); border-radius:8px; cursor:pointer; transition:background .15s, outline-color .15s; }
+  /* Lista: SIN vh; llena el espacio con flex */
+  #list{
+    flex:1 1 auto; overflow:auto; margin-top:4px;
+    display:grid; grid-template-columns: 1fr; gap:6px; min-height:0;
+  }
+  .item { display:flex; align-items:center; gap:.6rem; padding:6px 8px; background:#101b2e; border:1px solid var(--line); border-radius:8px; cursor:pointer; }
   .item:hover { background:#15233a; }
   .item.selected { outline:2px solid #2ea36a; background:#162a3f; }
   .logo { width:36px; height:36px; border-radius:6px; object-fit:cover; background:#0d1322; }
   .title { flex:1; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .tag { font-size:11px; padding:2px 6px; border-radius:999px; border:1px solid #2b3a52; }
 
-  .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:10px; }
-  .tabs { display:flex; gap:6px; margin:10px 0; }
+  .tabs { display:flex; gap:6px; }
   .tab { padding:8px 10px; border-radius:8px; border:1px solid #2b3a52; background:#1f2b3d; cursor:pointer; }
   .tab.active { background:#245c3c; border-color:#2ea36a; }
 
+  /* Player: SIN vh; siempre 100% del alto de main */
+  .stack{
+    position:relative; width:100%; flex:1 1 auto; min-height:0;
+    background:#000; border-radius:10px; overflow:hidden; border:1px solid var(--line);
+  }
+  video, iframe { width:100%; height:100%; border:0; display:block; background:#000; object-fit:contain; }
   .wrapProtected { position:relative; width:100%; height:100%; }
   .shield { position:absolute; inset:0; display:grid; place-items:center; background:rgba(9,13,23,.55); backdrop-filter:blur(2px); }
   .panel { padding:14px 16px; border-radius:12px; background:#0f1725; border:1px solid var(--line); text-align:center; max-width:520px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
   .small { font-size:12px; }
   .count { font-variant-numeric: tabular-nums; }
   .hidden { display:none !important; }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-  .chip { padding:4px 8px; border-radius:999px; border:1px solid #2b3a52; background:#1f2b3d; font-size:12px; cursor:pointer; }
-  .chip:hover { background:#2a3a55; }
 
   /* HUD flotante */
   .hud {
-    position:fixed; right:10px; bottom:10px; display:flex; gap:.5rem; align-items:center;
+    position:fixed; right:10px; bottom:calc(var(--footer-h) + 10px); display:flex; gap:.5rem; align-items:center;
     background:rgba(17,24,38,.88); border:1px solid var(--line); border-radius:12px; padding:6px 8px; z-index:40; backdrop-filter: blur(4px);
   }
   .hud button { font-size:13px; }
@@ -62,7 +103,7 @@
 
   /* Lupa flotante */
   .fab {
-    position:fixed; right:18px; top:18px; width:56px; height:56px; border-radius:999px;
+    position:fixed; right:18px; top:calc(var(--topbar-h) + 10px); width:56px; height:56px; border-radius:999px;
     display:grid; place-items:center; font-size:22px; background:var(--accent); color:#fff;
     box-shadow:0 8px 20px rgba(0,0,0,.35); cursor:grab; z-index:50; user-select:none;
   }
@@ -70,22 +111,22 @@
 
   /* Panel de búsqueda flotante */
   .search-panel {
-    position:fixed; left:50%; top:88px; transform:translateX(-50%); width:min(860px,92vw); z-index:60;
-    background:#111826; border:1px solid var(--line); border-radius:16px; padding:12px; display:none;
+    position:fixed; left:50%; top:calc(var(--topbar-h) + 20px); transform:translateX(-50%);
+    width:min(860px,92vw); z-index:60; background:#111826; border:1px solid var(--line); border-radius:16px; padding:12px; display:none;
   }
   .search-panel.show { display:block; }
 
-  /* Toast/status */
-  .status {
-    position:fixed; left:50%; transform:translateX(-50%); bottom:18px; background:#0f1827; border:1px solid var(--line);
-    color:#cfe4ff; padding:8px 12px; border-radius:10px; font-size:13px; opacity:.95; z-index:70; display:none;
-  }
-
-  /* Mini-Monitor (fallback si no hay Document PiP) */
-  #miniMon { position:fixed; right:10px; top:74px; width:360px; height:202px; background:#000; border:1px solid var(--line); border-radius:12px; overflow:hidden; z-index:65; box-shadow:0 10px 30px rgba(0,0,0,.4); }
+  /* Mini-Monitor (para páginas cuando no hay Doc-PiP) */
+  #miniMon { position:fixed; right:10px; top:calc(var(--topbar-h) + 10px); width:360px; height:202px; background:#000; border:1px solid var(--line); border-radius:12px; overflow:hidden; z-index:65; box-shadow:0 10px 30px rgba(0,0,0,.4); }
   #miniMon.hidden { display:none; }
   #miniMon iframe { width:100%; height:100%; border:0; background:#000; }
   #miniMon .close { position:absolute; top:6px; right:6px; font-size:14px; padding:4px 7px; border-radius:8px; border:1px solid #2b3a52; background:#111826; color:#fff; cursor:pointer; }
+
+  /* Toast/status */
+  .status {
+    position:fixed; left:50%; transform:translateX(-50%); bottom:calc(var(--footer-h) + 18px);
+    background:#0f1827; border:1px solid var(--line); color:#cfe4ff; padding:8px 12px; border-radius:10px; font-size:13px; opacity:.95; z-index:70; display:none;
+  }
 
   /* Historial de la lupa */
   .history-list { margin-top: 8px; max-height: 46vh; overflow: auto; display: grid; gap: 6px; }
@@ -94,7 +135,14 @@
   .history-actions { grid-column: 2 / 3; display:flex; gap:6px; align-items:center; justify-content:flex-end; }
   .history-url { grid-column: 1 / 2; font-size: 12px; opacity:.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .history-meta { grid-column: 2 / 3; font-size: 11px; opacity:.7; text-align:right; }
-  .history-empty { padding:10px; text-align:center; font-size:12px; opacity:.7; border:1px dashed #2b3a52; border-radius:10px; }
+
+  /* Footer fijo para estabilidad */
+  footer{
+    position:fixed; left:0; right:0; bottom:0; height:var(--footer-h);
+    padding:6px 16px; opacity:.65; font-size:12px; border-top:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(15,22,36,0) 0%, rgba(15,22,36,.9) 40%, rgba(15,22,36,.95) 100%);
+    display:flex; align-items:center;
+  }
 </style>
 </head>
 <body>
@@ -146,10 +194,10 @@
         <button id="btnClearList" class="danger">Limpiar listado</button>
       </div>
 
-      <!-- Chips de categorías dinámicas -->
+      <!-- Chips -->
       <div id="chips" class="chips"></div>
 
-      <!-- Listado de canales -->
+      <!-- Listado -->
       <div id="list" class="list" tabindex="0" aria-label="Listado de canales"></div>
 
       <!-- Favoritos -->
@@ -173,7 +221,7 @@
       </div>
 
       <div id="playerProtected" class="stack hidden">
-        <div class="wrapProtected" style="width:100%;height:100%;">
+        <div class="wrapProtected">
           <iframe id="iframeProtected"
             allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-read; clipboard-write; storage-access"
             sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
@@ -196,12 +244,12 @@
       <div class="toolbar">
         <label class="small">Auto-desbloqueo: <input id="unlockSeconds" type="number" min="0" step="1" value="8" style="width:72px;"></label>
         <button id="btnApply">Aplicar</button>
-        <span class="small muted">Si un canal es una página (p.ej. tvporinternet2.com), usa el Player protegido.</span>
+        <span class="small muted">Para páginas (tvporinternet2) usa el Player protegido.</span>
       </div>
     </main>
   </div>
 
-  <footer style="padding:10px 16px; opacity:.65; font-size:12px; border-top:1px solid var(--line);">Mi TV Station Fusion · Soporte M3U/JSON · HLS.js · Player protegido.</footer>
+  <footer>Mi TV Station Fusion · Soporte M3U/JSON · HLS.js · Player protegido.</footer>
 
   <!-- HUD flotante -->
   <div class="hud" id="hud">
@@ -213,13 +261,15 @@
     <button id="toggleUIBtn" class="btn">🪄 UI</button>
   </div>
 
-  <!-- Mini-Monitor (fallback si no hay Document PiP) -->
+  <!-- Mini-Monitor (fallback Doc-PiP) -->
   <div id="miniMon" class="hidden" aria-live="polite">
     <button class="close" id="miniMonClose">✖</button>
-    <iframe id="miniMonFrame" allow="autoplay; fullscreen; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" referrerpolicy="no-referrer"></iframe>
+    <iframe id="miniMonFrame" allow="autoplay; fullscreen; picture-in-picture"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+            referrerpolicy="no-referrer"></iframe>
   </div>
 
-  <!-- Lupa flotante + historial -->
+  <!-- Lupa + historial -->
   <div class="fab" id="fab" title="Buscar / Pegar URL">🔎</div>
   <div class="search-panel" id="searchPanel">
     <div class="row" style="gap:.5rem;">
@@ -238,198 +288,68 @@
 
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script>
-  /* ========= Estado / almacenamiento ========= */
-  const STORAGE_FAVS = 'mtv:favs';
-  const STORAGE_LAST = 'mtv:last';
-  const STORAGE_HISTORY = 'mtv:searchHistory';
-  const STORAGE_AUTOPIP = 'mtv:autoPiP';
-  const STORAGE_VOLUME  = 'mtv:volume';
-  const MAX_HISTORY = 50;
+  /* =================== Estado =================== */
+  const STORAGE_FAVS='mtv:favs', STORAGE_LAST='mtv:last', STORAGE_HISTORY='mtv:searchHistory',
+        STORAGE_AUTOPIP='mtv:autoPiP', STORAGE_VOLUME='mtv:volume', MAX_HISTORY=50;
 
-  let channels = []; // {name, url, logo?, group?}
-  let filtered = [];
-  let selectedIndex = -1;
-  let favs = [];
+  let channels=[], filtered=[], selectedIndex=-1, favs=[];
+  let AUTO_UNLOCK_SECONDS=8, locked=true, timerInt=null, secondsLeft=8;
+  let hls=null, autoPiP=JSON.parse(localStorage.getItem(STORAGE_AUTOPIP)||'true');
 
-  /* ========= UI refs ========= */
-  const topbar = document.getElementById('topbar');
+  /* =================== Refs =================== */
   const listEl = document.getElementById('list');
   const searchEl = document.getElementById('search');
   const chipsEl = document.getElementById('chips');
-  const presetSelect = document.getElementById('presetSelect');
-  const btnLoadPreset = document.getElementById('btnLoadPreset');
-  const fileInput = document.getElementById('fileInput');
-  const btnClearList = document.getElementById('btnClearList');
 
-  // Flechas laterales
-  const btnUp = document.getElementById('btnUp');
-  const btnDown = document.getElementById('btnDown');
-  const btnPageUp = document.getElementById('btnPageUp');
-  const btnPageDown = document.getElementById('btnPageDown');
-  const btnPlaySel = document.getElementById('btnPlaySel');
+  const presetSelect=document.getElementById('presetSelect');
+  const btnLoadPreset=document.getElementById('btnLoadPreset');
+  const fileInput=document.getElementById('fileInput');
+  const btnClearList=document.getElementById('btnClearList');
 
-  const btnAddFav = document.getElementById('btnAddFav');
-  const favSelect = document.getElementById('favSelect');
-  const btnPlayFav = document.getElementById('btnPlayFav');
-  const btnDelFav = document.getElementById('btnDelFav');
+  const btnUp=document.getElementById('btnUp'), btnDown=document.getElementById('btnDown'),
+        btnPageUp=document.getElementById('btnPageUp'), btnPageDown=document.getElementById('btnPageDown'),
+        btnPlaySel=document.getElementById('btnPlaySel');
 
-  const tabNormal = document.getElementById('tabNormal');
-  const tabProtected = document.getElementById('tabProtected');
-  const playerNormal = document.getElementById('playerNormal');
-  const playerProtected = document.getElementById('playerProtected');
+  const btnAddFav=document.getElementById('btnAddFav'), favSelect=document.getElementById('favSelect'),
+        btnPlayFav=document.getElementById('btnPlayFav'), btnDelFav=document.getElementById('btnDelFav');
 
-  const video = document.getElementById('video');
-  const iframeNormal = document.getElementById('iframeNormal');
-  const iframeProtected = document.getElementById('iframeProtected');
-  const shield = document.getElementById('shield');
-  const countEl = document.getElementById('count');
-  const unlockNow = document.getElementById('unlockNow');
-  const keepLocked = document.getElementById('keepLocked');
-  const modeEl = document.getElementById('mode');
-  const openTop = document.getElementById('openTop');
-  const btnLock = document.getElementById('btnLock');
-  const btnUnlock = document.getElementById('btnUnlock');
-  const unlockSecondsEl = document.getElementById('unlockSeconds');
-  const btnApply = document.getElementById('btnApply');
+  const tabNormal=document.getElementById('tabNormal'), tabProtected=document.getElementById('tabProtected');
+  const playerNormal=document.getElementById('playerNormal'), playerProtected=document.getElementById('playerProtected');
 
-  // HUD + Lupa + Status
-  const pipBtn = document.getElementById('pip');   // Auto-PiP toggle
-  const vol = document.getElementById('vol');
-  const toggleShieldBtn = document.getElementById('toggleShieldBtn');
-  const focusBtn = document.getElementById('focusBtn');
-  const reloadBtn = document.getElementById('reloadBtn');
-  const toggleUIBtn = document.getElementById('toggleUIBtn');
+  const video=document.getElementById('video'), iframeNormal=document.getElementById('iframeNormal');
+  const iframeProtected=document.getElementById('iframeProtected'), shield=document.getElementById('shield');
+  const modeEl=document.getElementById('mode'), openTop=document.getElementById('openTop');
+  const countEl=document.getElementById('count'), unlockNow=document.getElementById('unlockNow'), keepLocked=document.getElementById('keepLocked');
+  const btnLock=document.getElementById('btnLock'), btnUnlock=document.getElementById('btnUnlock'),
+        unlockSecondsEl=document.getElementById('unlockSeconds'), btnApply=document.getElementById('btnApply');
 
-  const fab = document.getElementById('fab');
-  const searchPanel = document.getElementById('searchPanel');
-  const q = document.getElementById('q');
-  const go = document.getElementById('go');
-  const closeSearch = document.getElementById('closeSearch');
-  const historyList = document.getElementById('historyList');
-  const clearHistoryBtn = document.getElementById('clearHistory');
-  const statusBox = document.getElementById('status');
+  const pipBtn=document.getElementById('pip'), vol=document.getElementById('vol'),
+        toggleShieldBtn=document.getElementById('toggleShieldBtn'), focusBtn=document.getElementById('focusBtn'),
+        reloadBtn=document.getElementById('reloadBtn'), toggleUIBtn=document.getElementById('toggleUIBtn');
 
-  /* ========= Config ========= */
-  let AUTO_UNLOCK_SECONDS = 8, locked = true, timerInt = null, secondsLeft = 8;
-  let hls = null;
-  let autoPiP = JSON.parse(localStorage.getItem(STORAGE_AUTOPIP) || 'true'); // ON por defecto
-  let uiHiddenTimer = null;
+  const fab=document.getElementById('fab'), searchPanel=document.getElementById('searchPanel'),
+        q=document.getElementById('q'), go=document.getElementById('go'), closeSearch=document.getElementById('closeSearch'),
+        historyList=document.getElementById('historyList'), clearHistoryBtn=document.getElementById('clearHistory');
+  const statusBox=document.getElementById('status');
+  const miniMon=document.getElementById('miniMon'), miniMonFrame=document.getElementById('miniMonFrame');
 
-  /* ========= Doc-PiP + Mini-Monitor ========= */
-  let docPipWin = null;
-  async function openDocPiPForPage(url){
-    if(!('documentPictureInPicture' in window)) return false;
-    try{
-      if (docPipWin && !docPipWin.closed) { docPipWin.close(); }
-      docPipWin = await documentPictureInPicture.requestWindow({ width: 480, height: 270 });
-      const d = docPipWin.document;
-      d.write(`<!doctype html><html><head><meta charset="utf-8">
-        <style>
-          html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,Segoe UI,Roboto,Arial;}
-          #bar{position:absolute;left:0;right:0;top:0;height:28px;background:rgba(17,24,38,.85);display:flex;align-items:center;gap:8px;padding:0 10px;font-size:12px;}
-          #t{flex:1 1 auto;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-          #x{background:#1f2b3d;border:1px solid #2b3a52;color:#e9eef5;border-radius:8px;padding:3px 8px;cursor:pointer}
-          #wrap{position:absolute;inset:28px 0 0 0;}
-          iframe{width:100%;height:100%;border:0;background:#000}
-        </style></head>
-        <body>
-          <div id="bar"><div id="t">Monitor</div><button id="x">Cerrar</button></div>
-          <div id="wrap"><iframe id="f" allow="autoplay; fullscreen; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" referrerpolicy="no-referrer"></iframe></div>
-          <script>
-            const f=document.getElementById('f'); const t=document.getElementById('t'); const x=document.getElementById('x');
-            window.addEventListener('message', ev=>{ if(ev.data&&ev.data.type==='pip:load'){ f.src=ev.data.url; t.textContent=ev.data.title||'Monitor'; }});
-            x.addEventListener('click', ()=> window.close());
-          <\/script>
-        </body></html>`);
-      d.close();
-      // pasa el URL actual
-      docPipWin.postMessage({ type:'pip:load', url, title:'Monitor' }, '*');
-      // si se cierra, limpia handler
-      const i = setInterval(()=>{ if(!docPipWin || docPipWin.closed){ clearInterval(i); docPipWin=null; } }, 1000);
-      return true;
-    }catch(e){ console.warn('Doc-PiP error', e); docPipWin=null; return false; }
-  }
-  function closeDocPiP(){ try{ if(docPipWin && !docPipWin.closed) docPipWin.close(); }catch{} docPipWin=null; }
-  function updateDocPiP(url, title){ try{ if(docPipWin && !docPipWin.closed){ docPipWin.postMessage({type:'pip:load', url, title}, '*'); } }catch{} }
-
-  const miniMon = document.getElementById('miniMon');
-  const miniMonFrame = document.getElementById('miniMonFrame');
-  document.getElementById('miniMonClose').addEventListener('click', ()=>{ miniMon.classList.add('hidden'); });
-
-  function showMiniMon(url){
-    miniMonFrame.src = url;
-    miniMon.classList.remove('hidden');
-  }
-  function hideMiniMon(){
-    miniMon.classList.add('hidden');
-    miniMonFrame.src = 'about:blank';
-  }
-
-  /* ========= Helpers ========= */
-  function toast(msg, ms=1600){
-    statusBox.textContent = msg;
-    statusBox.style.display = "block";
-    clearTimeout(statusBox._t);
-    statusBox._t = setTimeout(()=>statusBox.style.display="none", ms);
-  }
-
+  /* =================== Helpers =================== */
+  function toast(msg, ms=1600){ statusBox.textContent=msg; statusBox.style.display="block"; clearTimeout(statusBox._t); statusBox._t=setTimeout(()=>statusBox.style.display="none", ms); }
   function isM3U8(url){ return /\.m3u8(\?|$)/i.test(url); }
   function isYouTube(url){ return /youtube\.com\/watch\?|youtu\.be\//i.test(url); }
   function isWebPage(url){ return !isM3U8(url) && !/\.mp4(\?|$)/i.test(url) && !isYouTube(url); }
+  function deriveNameFromUrl(u){ try{ const slug=new URL(u).pathname.split('/').filter(Boolean).pop().replace(/\.html?$/,''); let name=slug.replace(/-/g,' '); name=name.replace(/en vivo por internet|en vivo|por internet|hd|mexico|espanol/gi,'').replace(/\s+/g,' ').trim(); name=name.split(' ').map(w=>w?(w[0].toUpperCase()+w.slice(1)):'').join(' '); return name||u; }catch{ return u; } }
 
-  function deriveNameFromUrl(u){
-    try{ const slug = new URL(u).pathname.split('/').filter(Boolean).pop().replace(/\.html?$/,'');
-      let name = slug.replace(/-/g,' ');
-      name = name.replace(/en vivo por internet|en vivo|por internet|hd|mexico|espanol/gi,'').replace(/\s+/g,' ').trim();
-      name = name.split(' ').map(w => w ? (w[0].toUpperCase()+w.slice(1)) : '').join(' ');
-      return name || u; } catch{ return u; }
-  }
-
-  /* ========= Historial (lupa) ========= */
-  function getHistory(){ try { return JSON.parse(localStorage.getItem(STORAGE_HISTORY) || '[]'); } catch { return []; } }
-  function setHistory(arr){ localStorage.setItem(STORAGE_HISTORY, JSON.stringify(arr)); }
-  function saveHistory(url, name){
-    if(!url) return;
-    name = name || deriveNameFromUrl(url);
-    let hist = getHistory();
-    const i = hist.findIndex(h => h.url === url);
-    const now = Date.now();
-    if(i >= 0){
-      const e = hist.splice(i,1)[0];
-      e.ts = now; e.count = (e.count||0) + 1; e.name = name || e.name;
-      hist.unshift(e);
-    } else { hist.unshift({ url, name, ts: now, count: 1 }); }
-    if(hist.length > MAX_HISTORY) hist = hist.slice(0, MAX_HISTORY);
-    setHistory(hist);
-  }
-  function removeHistory(url){ const hist = getHistory().filter(h => h.url !== url); setHistory(hist); renderHistory(q?.value?.trim() || ''); }
+  /* =================== Historial (lupa) =================== */
+  function getHistory(){ try{ return JSON.parse(localStorage.getItem(STORAGE_HISTORY)||'[]'); }catch{ return []; } }
+  function setHistory(a){ localStorage.setItem(STORAGE_HISTORY, JSON.stringify(a)); }
+  function saveHistory(url, name){ if(!url) return; name=name||deriveNameFromUrl(url); let h=getHistory(); const i=h.findIndex(e=>e.url===url); const now=Date.now(); if(i>=0){ const e=h.splice(i,1)[0]; e.ts=now; e.count=(e.count||0)+1; e.name=name||e.name; h.unshift(e); }else{ h.unshift({url,name,ts:now,count:1}); } if(h.length>MAX_HISTORY) h=h.slice(0,MAX_HISTORY); setHistory(h); }
+  function removeHistory(url){ setHistory(getHistory().filter(h=>h.url!==url)); renderHistory(q?.value?.trim()||''); }
   function clearHistory(){ setHistory([]); renderHistory(''); }
-  function fmtTime(ts){ try { return new Date(ts).toLocaleString(); } catch { return ''; } }
-  function renderHistory(filter=''){
-    if(!historyList) return;
-    const f = (filter||'').toLowerCase();
-    const rows = getHistory().filter(h => !f || (h.name?.toLowerCase().includes(f) || h.url.toLowerCase().includes(f)));
-    historyList.innerHTML = '';
-    if(!rows.length){ historyList.innerHTML = `<div class="history-empty">Sin historial</div>`; return; }
-    for(const h of rows){
-      const item = document.createElement('div');
-      item.className = 'history-item';
-      item.innerHTML = `
-        <div class="history-title" title="${h.name||''}">${h.name||'Canal'}</div>
-        <div class="history-actions">
-          <button class="ok play">▶</button>
-          <button class="danger del">🗑️</button>
-        </div>
-        <div class="history-url" title="${h.url}">${h.url}</div>
-        <div class="history-meta">Visto: ${fmtTime(h.ts)} · ${(h.count||1)}×</div>
-      `;
-      item.querySelector('.play').onclick = () => { playChannel({ name: h.name, url: h.url }); closePanel(); };
-      item.querySelector('.del').onclick = () => removeHistory(h.url);
-      historyList.appendChild(item);
-    }
-  }
+  function fmtTime(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ''; } }
+  function renderHistory(filter=''){ const f=(filter||'').toLowerCase(); const rows=getHistory().filter(h=>!f || (h.name?.toLowerCase().includes(f) || h.url.toLowerCase().includes(f))); historyList.innerHTML=''; if(!rows.length){ historyList.innerHTML='<div class="history-empty">Sin historial</div>'; return; } for(const h of rows){ const item=document.createElement('div'); item.className='history-item'; item.innerHTML=`<div class="history-title" title="${h.name||''}">${h.name||'Canal'}</div><div class="history-actions"><button class="ok play">▶</button><button class="danger del">🗑️</button></div><div class="history-url" title="${h.url}">${h.url}</div><div class="history-meta">Visto: ${fmtTime(h.ts)} · ${(h.count||1)}×</div>`; item.querySelector('.play').onclick=()=>{ playChannel({name:h.name,url:h.url}); closePanel(); }; item.querySelector('.del').onclick=()=>removeHistory(h.url); historyList.appendChild(item); } }
 
-  /* ========= PRESET tvporinternet2 ========= */
+  /* =================== Preset rápido =================== */
   const PRESET_TVPORINTERNET2 = [
     "https://www.tvporinternet2.com/el-gourmet-en-vivo-por-internet.html",
     "https://www.tvporinternet2.com/distrito-comedia-en-vivo-por-internet.html",
@@ -566,361 +486,225 @@
     "https://movie-verse-sage.vercel.app/the-movie-central"
   ];
 
-  /* ========= Parsers ========= */
   function parseM3U(text){
-    const lines = text.split(/\r?\n/);
-    const out = [];
-    let current = null;
-    for (let i=0;i<lines.length;i++){
-      const line = (lines[i]||'').trim();
-      if (!line) continue;
-      if (line.startsWith('#EXTINF')){
-        const nameMatch = line.split(',');
-        const name = (nameMatch[1]||'Canal').trim();
-        const attrs = {};
-        const re = /(\w[\w-]*)="(.*?)"/g; let m;
-        while((m = re.exec(line))){ attrs[m[1]] = m[2]; }
-        current = { name, url:'', logo: attrs['tvg-logo'] || attrs['logo'] || '' , group: attrs['group-title']||'' };
-      } else if (!line.startsWith('#')){
-        if (!current){ current = { name: line.split('/').pop(), logo:'', group:'' }; }
-        current.url = line.trim();
-        out.push(current); current = null;
+    const lines=text.split(/\r?\n/), out=[]; let current=null;
+    for (const raw of lines){
+      const line=(raw||'').trim(); if(!line) continue;
+      if(line.startsWith('#EXTINF')){
+        const nameMatch=line.split(','); const name=(nameMatch[1]||'Canal').trim();
+        const attrs={}; const re=/(\w[\w-]*)="(.*?)"/g; let m; while((m=re.exec(line))){ attrs[m[1]]=m[2]; }
+        current={name, url:'', logo: attrs['tvg-logo']||attrs['logo']||'', group: attrs['group-title']||''};
+      } else if(!line.startsWith('#')){
+        if(!current){ current={ name: line.split('/').pop(), logo:'', group:'' }; }
+        current.url=line; out.push(current); current=null;
       }
     }
     return out;
   }
-
   function mergeChannels(list){
-    const seen = new Set(channels.map(c=>c.url));
-    for (let c of list){
-      if (!c) continue;
-      if (typeof c === 'string') c = { url: c };
-      if (!c.url) continue;
-      if (!c.name) c.name = deriveNameFromUrl(c.url);
-      if (!seen.has(c.url)){
-        channels.push({ name: c.name||'Canal', url:c.url, logo:c.logo||'', group:c.group||'' });
-        seen.add(c.url);
-      }
+    const seen=new Set(channels.map(c=>c.url));
+    for(let c of list){
+      if(!c) continue;
+      if(typeof c === 'string') c={url:c};
+      if(!c.url) continue;
+      if(!c.name) c.name=deriveNameFromUrl(c.url);
+      if(!seen.has(c.url)){ channels.push({name:c.name||'Canal', url:c.url, logo:c.logo||'', group:c.group||''}); seen.add(c.url); }
     }
-    buildCategories();
-    applyFilter();
+    buildCategories(); applyFilter();
   }
 
-  /* ========= Categorías ========= */
   function buildCategories(){
-    const groups = Array.from(new Set(channels.map(c=>c.group).filter(Boolean))).sort();
-    chipsEl.innerHTML = '';
-    const allChip = document.createElement('div');
-    allChip.className='chip'; allChip.textContent='Todas';
-    allChip.onclick = ()=>{ searchEl.dataset.group=''; applyFilter(); };
+    const groups=Array.from(new Set(channels.map(c=>c.group).filter(Boolean))).sort();
+    chipsEl.innerHTML='';
+    const allChip=document.createElement('div'); allChip.className='chip'; allChip.textContent='Todas';
+    allChip.onclick=()=>{ searchEl.dataset.group=''; applyFilter(); };
     chipsEl.appendChild(allChip);
-    for (const g of groups){
-      const ch = document.createElement('div'); ch.className='chip'; ch.textContent=g;
-      ch.onclick = ()=>{ searchEl.dataset.group=g; applyFilter(); };
+    for(const g of groups){
+      const ch=document.createElement('div'); ch.className='chip'; ch.textContent=g;
+      ch.onclick=()=>{ searchEl.dataset.group=g; applyFilter(); };
       chipsEl.appendChild(ch);
     }
   }
 
-  /* ========= Filtro + render ========= */
   function applyFilter(){
-    const qv = (searchEl.value||'').toLowerCase().trim();
-    const g = searchEl.dataset.group||'';
-    filtered = channels.filter(c=>{
-      const byQ = !qv || c.name.toLowerCase().includes(qv);
-      const byG = !g || (c.group||'')===g;
-      return byQ && byG;
-    });
+    const qv=(searchEl.value||'').toLowerCase().trim(); const g=searchEl.dataset.group||'';
+    filtered=channels.filter(c=> (!qv || c.name.toLowerCase().includes(qv)) && (!g || (c.group||'')===g) );
     renderList();
   }
-
   function updateSelectedClass(){
-    listEl.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
-    if (selectedIndex>=0){
-      const sel = listEl.querySelector(`.item[data-index="${selectedIndex}"]`);
-      if (sel) sel.classList.add('selected');
-    }
+    listEl.querySelectorAll('.item').forEach(el=>el.classList.remove('selected'));
+    if(selectedIndex>=0){ const sel=listEl.querySelector(`.item[data-index="${selectedIndex}"]`); if(sel) sel.classList.add('selected'); }
   }
-
   function renderList(){
     listEl.innerHTML='';
-    filtered.forEach((c, idx)=>{
-      const div = document.createElement('div');
-      div.className='item'; div.tabIndex=0; div.dataset.index=idx;
-      const img = document.createElement('img'); img.className='logo'; img.alt='logo';
-      img.src = c.logo || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2236%22 height=%2236%22%3E%3Crect width=%2236%22 height=%2236%22 fill=%22%230d1322%22/%3E%3C/svg%3E';
-      const name = document.createElement('div'); name.className='title'; name.textContent = c.name;
-      const tag = document.createElement('span'); tag.className='tag';
-      tag.textContent = isWebPage(c.url) ? 'WEB' : (isM3U8(c.url) ? 'HLS' : 'MP4/OTRO');
-      div.append(img, name, tag);
-      div.onclick = ()=> selectAndPlay(idx);
-      div.onkeydown = (e)=>{ if(e.key==='Enter') selectAndPlay(idx); };
+    filtered.forEach((c,idx)=>{
+      const div=document.createElement('div'); div.className='item'; div.tabIndex=0; div.dataset.index=idx;
+      const img=document.createElement('img'); img.className='logo'; img.alt='logo';
+      img.src=c.logo||'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2236%22 height=%2236%22%3E%3Crect width=%2236%22 height=%2236%22 fill=%22%230d1322%22/%3E%3C/svg%3E';
+      const name=document.createElement('div'); name.className='title'; name.textContent=c.name;
+      const tag=document.createElement('span'); tag.className='tag'; tag.textContent = isWebPage(c.url) ? 'WEB' : (isM3U8(c.url) ? 'HLS' : 'MP4/OTRO');
+      div.append(img,name,tag);
+      div.onclick=()=>selectAndPlay(idx);
+      div.onkeydown=(e)=>{ if(e.key==='Enter') selectAndPlay(idx); };
       listEl.appendChild(div);
     });
     selectedIndex = filtered.length ? Math.max(0, Math.min(selectedIndex, filtered.length-1)) : -1;
     updateSelectedClass();
   }
 
-  function itemsPerPage(){
-    const first = listEl.querySelector('.item');
-    const hItem = first ? first.offsetHeight + 6 : 52;
-    const hList = listEl.clientHeight || 360;
-    return Math.max(1, Math.floor(hList / hItem));
-  }
+  function itemsPerPage(){ const first=listEl.querySelector('.item'); const hItem=first ? first.offsetHeight+6 : 52; const hList=listEl.clientHeight||360; return Math.max(1, Math.floor(hList/hItem)); }
+  function moveSelection(delta){ if(!filtered.length) return; selectedIndex = selectedIndex<0 ? 0 : selectedIndex + delta; selectedIndex=Math.max(0, Math.min(filtered.length-1, selectedIndex)); const el=listEl.querySelector(`.item[data-index="${selectedIndex}"]`); if(el){ el.scrollIntoView({block:'nearest'}); el.focus(); } updateSelectedClass(); }
+  function pageMove(dp){ moveSelection(dp*itemsPerPage()); }
+  function selectAndPlay(idx){ selectedIndex=idx; const ch=filtered[idx]; if(!ch) return; updateSelectedClass(); playChannel(ch); }
 
-  function moveSelection(delta){
-    if (!filtered.length) return;
-    selectedIndex = selectedIndex<0 ? 0 : selectedIndex + delta;
-    selectedIndex = Math.max(0, Math.min(filtered.length-1, selectedIndex));
-    const el = listEl.querySelector(`.item[data-index="${selectedIndex}"]`);
-    if (el){ el.scrollIntoView({block:'nearest'}); el.focus(); }
-    updateSelectedClass();
-  }
-
-  function pageMove(deltaPages){ moveSelection(deltaPages * itemsPerPage()); }
-
-  function selectAndPlay(idx){
-    selectedIndex = idx;
-    const ch = filtered[idx];
-    if (!ch) return;
-    updateSelectedClass();
-    playChannel(ch);
-  }
-
-  /* ========= Tabs ========= */
   function setTab(which){
-    if (which==='protected'){
-      tabProtected.classList.add('active'); tabNormal.classList.remove('active');
-      playerProtected.classList.remove('hidden'); playerNormal.classList.add('hidden');
-    } else {
-      tabNormal.classList.add('active'); tabProtected.classList.remove('active');
-      playerNormal.classList.remove('hidden'); playerProtected.classList.add('hidden');
-    }
+    if(which==='protected'){ tabProtected.classList.add('active'); tabNormal.classList.remove('active'); playerProtected.classList.remove('hidden'); playerNormal.classList.add('hidden'); }
+    else { tabNormal.classList.add('active'); tabProtected.classList.remove('active'); playerNormal.classList.remove('hidden'); playerProtected.classList.add('hidden'); }
   }
 
-  /* ========= Protected (escudo + countdown) ========= */
-  function setProtectedLocked(on){ locked = on; shield.style.display = on ? 'grid' : 'none'; modeEl.textContent = on ? 'Bloqueado' : 'Desbloqueado'; if (on) window.focus(); }
-  function startCountdown(){ secondsLeft = AUTO_UNLOCK_SECONDS; countEl.textContent = secondsLeft; clearInterval(timerInt); timerInt = setInterval(()=>{ secondsLeft -= 1; countEl.textContent = secondsLeft; if (secondsLeft<=0){ clearInterval(timerInt); setProtectedLocked(false); } }, 1000); }
+  function setProtectedLocked(on){ locked=on; shield.style.display=on?'grid':'none'; modeEl.textContent = on ? 'Bloqueado':'Desbloqueado'; if(on) window.focus(); }
+  function startCountdown(){ secondsLeft=AUTO_UNLOCK_SECONDS; countEl.textContent=secondsLeft; clearInterval(timerInt); timerInt=setInterval(()=>{ countEl.textContent=--secondsLeft; if(secondsLeft<=0){ clearInterval(timerInt); setProtectedLocked(false); } },1000); }
   btnLock.addEventListener('click', ()=>{ clearInterval(timerInt); setProtectedLocked(true); startCountdown(); });
   btnUnlock.addEventListener('click', ()=>{ clearInterval(timerInt); setProtectedLocked(false); });
   unlockNow.addEventListener('click', ()=>{ clearInterval(timerInt); setProtectedLocked(false); });
   keepLocked.addEventListener('click', ()=>{ clearInterval(timerInt); startCountdown(); });
-  btnApply.addEventListener('click', ()=>{ AUTO_UNLOCK_SECONDS = Math.max(0, Number(unlockSecondsEl.value)||0); if (locked){ clearInterval(timerInt); startCountdown(); } });
-  new MutationObserver(()=>{ openTop.href = iframeProtected.src; }).observe(iframeProtected, { attributes:true, attributeFilter:['src'] });
+  btnApply.addEventListener('click', ()=>{ AUTO_UNLOCK_SECONDS=Math.max(0, Number(unlockSecondsEl.value)||0); if(locked){ clearInterval(timerInt); startCountdown(); } });
+  new MutationObserver(()=>{ openTop.href=iframeProtected.src; }).observe(iframeProtected,{attributes:true, attributeFilter:['src']});
 
-  /* ========= Video (HLS) + PiP ========= */
-  function clearHls(){ if (hls){ try{ hls.destroy(); }catch{} hls = null; } }
-  function centerFocus(){ window.scrollTo({top:0,left:0,behavior:"smooth"}); hideUISoon(); }
+  function clearHls(){ if(hls){ try{ hls.destroy(); }catch{} hls=null; } }
 
-  async function tryStartPiP(){
-    if(!document.pictureInPictureEnabled){ return false; }
-    try{
-      if(document.pictureInPictureElement !== video){
-        await video.requestPictureInPicture();
-      }
-      return true;
-    }catch(e){ console.warn("PiP fail", e); return false; }
-  }
+  async function tryStartPiP(){ if(!document.pictureInPictureEnabled) return false; try{ if(document.pictureInPictureElement!==video){ await video.requestPictureInPicture(); } return true; }catch{ return false; } }
   async function stopPiP(){ try{ if(document.pictureInPictureElement){ await document.exitPictureInPicture(); } }catch{} }
+  function setAutoPiPState(on){ autoPiP=!!on; localStorage.setItem(STORAGE_AUTOPIP, JSON.stringify(autoPiP)); pipBtn.textContent=`📺 PiP: ${autoPiP?'ON':'OFF'}`; if(!autoPiP){ stopPiP(); closeDocPiP(); hideMiniMon(); } }
+  pipBtn.addEventListener('click', ()=> setAutoPiPState(!autoPiP));
+  video.addEventListener('enterpictureinpicture', ()=>{ pipBtn.textContent='📺 PiP: ON'; });
+  video.addEventListener('leavepictureinpicture', ()=>{ if(!autoPiP) pipBtn.textContent='📺 PiP: OFF'; });
 
-  // Auto-PiP toggle (persistente)
-  function setAutoPiPState(on){
-    autoPiP = !!on;
-    localStorage.setItem(STORAGE_AUTOPIP, JSON.stringify(autoPiP));
-    pipBtn.textContent = `📺 PiP: ${autoPiP ? 'ON' : 'OFF'}`;
-    if(!autoPiP){ stopPiP(); closeDocPiP(); hideMiniMon(); }
-  }
-  pipBtn.addEventListener("click", ()=> setAutoPiPState(!autoPiP));
+  function applySavedVolume(){ const sv=parseFloat(localStorage.getItem(STORAGE_VOLUME)||vol.value||"0.8"); vol.value=isNaN(sv)?"0.8":sv.toString(); video.volume=parseFloat(vol.value); }
+  vol.addEventListener('input', ()=>{ const v=parseFloat(vol.value||"0.8"); localStorage.setItem(STORAGE_VOLUME, String(v)); video.volume=v; });
 
-  video.addEventListener("enterpictureinpicture", ()=>{ pipBtn.textContent = "📺 PiP: ON"; });
-  video.addEventListener("leavepictureinpicture", ()=>{ if(!autoPiP) pipBtn.textContent = "📺 PiP: OFF"; });
-
-  // Volumen persistente
-  function applySavedVolume(){
-    const sv = parseFloat(localStorage.getItem(STORAGE_VOLUME) || vol.value || "0.8");
-    vol.value = isNaN(sv) ? "0.8" : sv.toString();
-    video.volume = parseFloat(vol.value);
-  }
-  vol.addEventListener("input", ()=>{
-    const v = parseFloat(vol.value||"0.8");
-    localStorage.setItem(STORAGE_VOLUME, String(v));
-    video.volume = v;
-  });
-
-  // Autoplay con audio
   async function ensurePlayWithSound(){
-    applySavedVolume();
-    video.muted = false;
-    try { await video.play(); return; }
-    catch (e) {
-      try {
-        video.muted = true;
-        await video.play();
-        toast("Reproduciendo en silencio. Toca una tecla/clic para activar audio.");
-        const activate = () => {
-          try { video.muted = false; applySavedVolume(); } catch {}
-          document.removeEventListener('pointerdown', activate);
-          document.removeEventListener('keydown', activate);
-          if (autoPiP) tryStartPiP();
-        };
-        document.addEventListener('pointerdown', activate, { once:true });
-        document.addEventListener('keydown', activate, { once:true });
-      } catch (err) { console.warn('Autoplay bloqueado', err); }
+    applySavedVolume(); video.muted=false;
+    try{ await video.play(); return; }
+    catch(e){
+      try{
+        video.muted=true; await video.play(); toast("Reproduciendo en silencio. Pulsa una tecla/clic para activar audio.");
+        const activate=()=>{ try{ video.muted=false; applySavedVolume(); }catch{} document.removeEventListener('pointerdown',activate); document.removeEventListener('keydown',activate); if(autoPiP) tryStartPiP(); };
+        document.addEventListener('pointerdown',activate,{once:true}); document.addEventListener('keydown',activate,{once:true});
+      }catch{}
     }
   }
 
-  /* ========= Reproducción canal ========= */
+  /* ===== Doc-PiP / Mini-Monitor para páginas ===== */
+  let docPipWin=null;
+  async function openDocPiPForPage(url){
+    if(!('documentPictureInPicture' in window)) return false;
+    try{
+      if(docPipWin && !docPipWin.closed){ docPipWin.close(); }
+      docPipWin = await documentPictureInPicture.requestWindow({ width:480, height:270 });
+      const d=docPipWin.document;
+      d.write(`<!doctype html><html><head><meta charset="utf-8"><style>
+        html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,Segoe UI,Roboto,Arial;}
+        #bar{position:absolute;left:0;right:0;top:0;height:28px;background:rgba(17,24,38,.85);display:flex;align-items:center;gap:8px;padding:0 10px;font-size:12px;}
+        #t{flex:1 1 auto;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        #x{background:#1f2b3d;border:1px solid #2b3a52;color:#e9eef5;border-radius:8px;padding:3px 8px;cursor:pointer}
+        #wrap{position:absolute;inset:28px 0 0 0;}
+        iframe{width:100%;height:100%;border:0;background:#000}
+      </style></head><body>
+        <div id="bar"><div id="t">Monitor</div><button id="x">Cerrar</button></div>
+        <div id="wrap"><iframe id="f" allow="autoplay; fullscreen; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" referrerpolicy="no-referrer"></iframe></div>
+        <script>
+          const f=document.getElementById('f'); const t=document.getElementById('t'); const x=document.getElementById('x');
+          window.addEventListener('message', ev=>{ if(ev.data&&ev.data.type==='pip:load'){ f.src=ev.data.url; t.textContent=ev.data.title||'Monitor'; }});
+          x.addEventListener('click', ()=> window.close());
+        <\/script>
+      </body></html>`);
+      d.close();
+      docPipWin.postMessage({ type:'pip:load', url, title:'Monitor' }, '*');
+      const i=setInterval(()=>{ if(!docPipWin || docPipWin.closed){ clearInterval(i); docPipWin=null; } },1000);
+      return true;
+    }catch(e){ docPipWin=null; return false; }
+  }
+  function closeDocPiP(){ try{ if(docPipWin && !docPipWin.closed) docPipWin.close(); }catch{} docPipWin=null; }
+  function showMiniMon(url){ miniMonFrame.src=url; miniMon.classList.remove('hidden'); }
+  function hideMiniMon(){ miniMon.classList.add('hidden'); miniMonFrame.src='about:blank'; }
+  document.getElementById('miniMonClose').addEventListener('click', hideMiniMon);
+
+  /* =================== Play =================== */
   function playChannel(ch){
-    if(!ch || !ch.url) return;
+    if(!ch||!ch.url) return;
     saveHistory(ch.url, ch.name);
     localStorage.setItem(STORAGE_LAST, JSON.stringify(ch));
-    openTop.href = ch.url;
+    openTop.href=ch.url;
 
-    if (isWebPage(ch.url)){
+    if(isWebPage(ch.url)){
       setTab('protected'); setProtectedLocked(true); startCountdown();
-      iframeProtected.src = 'about:blank';
+      iframeProtected.src='about:blank';
       iframeProtected.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
-      iframeProtected.src = ch.url;
-      centerFocus();
+      iframeProtected.src=ch.url;
       toast("Cargando (Página)");
-
-      // *** Monitor siempre visible para páginas ***
-      if (autoPiP){
-        closeDocPiP(); hideMiniMon();
-        openDocPiPForPage(ch.url).then(ok=>{
-          if(!ok){ showMiniMon(ch.url); }
-        });
-      }
+      if(autoPiP){ closeDocPiP(); hideMiniMon(); openDocPiPForPage(ch.url).then(ok=>{ if(!ok) showMiniMon(ch.url); }); }
       return;
     }
 
-    // Stream directo => Player normal (Video)
-    setTab('normal'); iframeNormal.classList.add('hidden'); video.classList.remove('hidden');
-    clearHls();
-
-    if (isM3U8(ch.url)){
-      if (video.canPlayType('application/vnd.apple.mpegURL')){
-        video.src = ch.url; ensurePlayWithSound().then(()=> { if (autoPiP) tryStartPiP(); });
-      } else if (Hls.isSupported()){
-        hls = new Hls({
-          manifestLoadingTimeOut:30000, manifestLoadingMaxRetry:6, manifestLoadingRetryDelay:1000,
-          levelLoadingTimeOut:20000, levelLoadingMaxRetry:6, levelLoadingRetryDelay:1000,
-          fragLoadingTimeOut:20000, fragLoadingMaxRetry:6, fragLoadingRetryDelay:1000,
-          lowLatencyMode:true, liveSyncDurationCount:3, liveMaxLatencyDurationCount:6, maxLiveSyncPlaybackRate:1.2,
-          backBufferLength:30
-        });
+    // Stream directo
+    setTab('normal'); iframeNormal.classList.add('hidden'); video.classList.remove('hidden'); clearHls();
+    if(isM3U8(ch.url)){
+      if(video.canPlayType('application/vnd.apple.mpegURL')){ video.src=ch.url; ensurePlayWithSound().then(()=>{ if(autoPiP) tryStartPiP(); }); }
+      else if(Hls.isSupported()){
+        hls = new Hls({ manifestLoadingTimeOut:30000, manifestLoadingMaxRetry:6, manifestLoadingRetryDelay:1000,
+                        levelLoadingTimeOut:20000, levelLoadingMaxRetry:6, levelLoadingRetryDelay:1000,
+                        fragLoadingTimeOut:20000, fragLoadingMaxRetry:6, fragLoadingRetryDelay:1000,
+                        lowLatencyMode:true, liveSyncDurationCount:3, liveMaxLatencyDurationCount:6,
+                        maxLiveSyncPlaybackRate:1.2, backBufferLength:30 });
         hls.loadSource(ch.url); hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, async ()=>{ await ensurePlayWithSound(); if (autoPiP) tryStartPiP(); });
-        hls.on(Hls.Events.ERROR, (ev, data)=>{
-          const { fatal } = data||{};
-          if (fatal){
-            if (data.type===Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-            else if (data.type===Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-            else { clearHls(); playChannel(ch); }
-          }
-        });
-      } else {
-        video.src = ch.url; ensurePlayWithSound().then(()=> { if (autoPiP) tryStartPiP(); });
-      }
-    } else {
-      video.src = ch.url; ensurePlayWithSound().then(()=> { if (autoPiP) tryStartPiP(); });
-    }
+        hls.on(Hls.Events.MANIFEST_PARSED, async()=>{ await ensurePlayWithSound(); if(autoPiP) tryStartPiP(); });
+      } else { video.src=ch.url; ensurePlayWithSound().then(()=>{ if(autoPiP) tryStartPiP(); }); }
+    } else { video.src=ch.url; ensurePlayWithSound().then(()=>{ if(autoPiP) tryStartPiP(); }); }
 
-    // Al dejar un stream, cierra mini/Doc-PiP de páginas previas
     closeDocPiP(); hideMiniMon();
-
-    centerFocus();
-    toast("Reproduciendo (Video)");
   }
 
-  /* ========= Favoritos ========= */
-  function loadFavs(){ try{ favs = JSON.parse(localStorage.getItem(STORAGE_FAVS)||'[]'); }catch{ favs=[]; } rebuildFavs(); }
+  /* =================== Favoritos =================== */
+  function loadFavs(){ try{ favs=JSON.parse(localStorage.getItem(STORAGE_FAVS)||'[]'); }catch{ favs=[]; } rebuildFavs(); }
   function saveFavs(){ localStorage.setItem(STORAGE_FAVS, JSON.stringify(favs)); }
   function rebuildFavs(){ favSelect.innerHTML=''; favs.forEach((f,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=f.name; favSelect.appendChild(o); }); }
-  function addFav(){ const ch = filtered[selectedIndex]; if(!ch) return; if(!favs.some(x=>x.url===ch.url)){ favs.push(ch); saveFavs(); rebuildFavs(); } }
+  function addFav(){ const ch=filtered[selectedIndex]; if(!ch) return; if(!favs.some(x=>x.url===ch.url)){ favs.push(ch); saveFavs(); rebuildFavs(); } }
   function playFav(){ const f=favs[Number(favSelect.value)||0]; if(!f) return; playChannel(f); }
   function delFav(){ const i=Number(favSelect.value); if(isNaN(i)) return; favs.splice(i,1); saveFavs(); rebuildFavs(); }
   btnAddFav.addEventListener('click', addFav); btnPlayFav.addEventListener('click', playFav); btnDelFav.addEventListener('click', delFav);
 
-  /* ========= Presets / Archivos ========= */
+  /* =================== Presets / Archivos =================== */
   async function loadPreset(name){
-    if (name === 'tvporinternet2') { mergeChannels(PRESET_TVPORINTERNET2); return; }
-    try {
-      const res = await fetch(name);
-      if (!res.ok) throw new Error('No se pudo cargar preset');
-      const text = await res.text();
-      let list = [];
-      if (/^\s*\{/.test(text) || /^\s*\[/.test(text)){ list = JSON.parse(text); }
-      else { list = parseM3U(text); }
+    if(name==='tvporinternet2'){ mergeChannels(PRESET_TVPORINTERNET2); return; }
+    try{
+      const res=await fetch(name); if(!res.ok) throw new Error('No se pudo cargar preset');
+      const text=await res.text(); let list=[];
+      if(/^\s*\{/.test(text)||/^\s*\[/.test(text)){ list=JSON.parse(text); } else { list=parseM3U(text); }
       mergeChannels(list);
-    } catch(e){ alert('Error cargando preset: '+e.message); }
+    }catch(e){ alert('Error cargando preset: '+e.message); }
   }
   btnLoadPreset.addEventListener('click', ()=>{ const v=presetSelect.value; if(v) loadPreset(v); });
-  fileInput.addEventListener('change', async (e)=>{ const f = e.target.files?.[0]; if(!f) return; const text = await f.text(); try{ if (/^\s*\{/.test(text) || /^\s*\[/.test(text)){ mergeChannels(JSON.parse(text)); } else { mergeChannels(parseM3U(text)); } }catch(err){ alert('Archivo inválido: '+err.message); } });
+  fileInput.addEventListener('change', async (e)=>{ const f=e.target.files?.[0]; if(!f) return; const text=await f.text(); try{ if(/^\s*\{/.test(text)||/^\s*\[/.test(text)){ mergeChannels(JSON.parse(text)); } else { mergeChannels(parseM3U(text)); } }catch(err){ alert('Archivo inválido: '+err.message); } });
   btnClearList.addEventListener('click', ()=>{ if(confirm('¿Vaciar listado actual?')){ channels=[]; filtered=[]; selectedIndex=-1; buildCategories(); renderList(); } });
   searchEl.addEventListener('input', applyFilter);
 
-  /* ========= Lupa / buscador flotante ========= */
+  /* =================== Lupa =================== */
   function openSearch(x,y){
     searchPanel.classList.add("show");
-    if(x!=null && y!=null){
-      searchPanel.style.left = x+"px"; searchPanel.style.top = (y+20)+"px"; searchPanel.style.transform = "translateX(-50%)";
-    } else {
-      searchPanel.style.left = "50%"; searchPanel.style.top = "88px"; searchPanel.style.transform = "translateX(-50%)";
-    }
-    renderHistory('');
-    setTimeout(()=> q.focus(), 50);
+    if(x!=null && y!=null){ searchPanel.style.left=x+"px"; searchPanel.style.top=(y+20)+"px"; searchPanel.style.transform="translateX(-50%)"; }
+    else { searchPanel.style.left="50%"; searchPanel.style.top="calc(var(--topbar-h) + 20px)"; searchPanel.style.transform="translateX(-50%)"; }
+    renderHistory(''); setTimeout(()=> q.focus(), 50);
   }
   function closePanel(){ searchPanel.classList.remove("show"); }
-  fab.addEventListener("click", (e)=> openSearch(e.clientX, e.clientY));
-  closeSearch.addEventListener("click", closePanel);
-  q.addEventListener("input", () => renderHistory(q.value.trim()));
-  go.addEventListener("click", ()=>{
-    const u=q.value.trim();
-    if(!u) return;
-    saveHistory(u, deriveNameFromUrl(u));
-    playChannel({ name: deriveNameFromUrl(u), url: u });
-    closePanel();
-  });
+  fab.addEventListener('click', (e)=> openSearch(e.clientX, e.clientY));
+  closeSearch.addEventListener('click', closePanel);
+  q.addEventListener('input', ()=> renderHistory(q.value.trim()));
+  go.addEventListener('click', ()=>{ const u=q.value.trim(); if(!u) return; saveHistory(u, deriveNameFromUrl(u)); playChannel({name:deriveNameFromUrl(u), url:u}); closePanel(); });
 
-  // Drag básico para la lupa
-  (function(){
-    let dragging=false, offX=0, offY=0;
-    fab.addEventListener("mousedown", e=>{ dragging=true; offX=e.offsetX; offY=e.offsetY; e.preventDefault(); });
-    document.addEventListener("mousemove", e=>{
-      if(dragging){
-        fab.style.left  = Math.max(8, e.clientX-offX) + "px";
-        fab.style.top   = Math.max(8, e.clientY-offY) + "px";
-        fab.style.right = "auto";
-      }
-    });
-    document.addEventListener("mouseup", ()=> dragging=false);
-  })();
-
-  /* ========= Encabezado auto-oculto + HUD ========= */
-  function hideUISoon(){ clearTimeout(uiHiddenTimer); uiHiddenTimer = setTimeout(()=> topbar.classList.add("hidden"), 1600); }
-  function showUI(){ topbar.classList.remove("hidden"); hideUISoon(); }
-  document.addEventListener("mousemove", showUI);
-  document.addEventListener("keydown", showUI);
-  hideUISoon();
-
-  // HUD acciones
-  focusBtn.addEventListener("click", centerFocus);
-  toggleUIBtn.addEventListener("click", ()=> topbar.classList.toggle("hidden"));
-  reloadBtn.addEventListener("click", ()=>{
-    if(!playerProtected.classList.contains('hidden') && iframeProtected.src && iframeProtected.src!=="about:blank"){ iframeProtected.src = iframeProtected.src; toast("Reload iframe"); }
-    if(!playerNormal.classList.contains('hidden') && (video.src || hls)){ if(hls){ hls.stopLoad(); hls.startLoad(); } else { video.src=video.src; } toast("Reload video"); }
-  });
-  toggleShieldBtn.addEventListener("click", ()=>{
-    const on = shield.style.display !== "none";
-    if(on){ shield.style.display="none"; toggleShieldBtn.textContent="🛡️ Escudo: OFF"; }
-    else { shield.style.display="grid"; toggleShieldBtn.textContent="🛡️ Escudo: ON"; }
-  });
-
-  /* ========= Flechas laterales: click y mantener presionado ========= */
+  /* =================== HUD / Botones =================== */
   function attachHoldRepeat(btn, fn, firstDelay=350, repeatEvery=100){
-    let t1=null, t2=null;
-    const start = ()=>{ fn(); t1=setTimeout(()=>{ t2=setInterval(fn, repeatEvery); }, firstDelay); };
-    const stop  = ()=>{ clearTimeout(t1); clearInterval(t2); t1=t2=null; };
+    let t1=null, t2=null; const start=()=>{ fn(); t1=setTimeout(()=>{ t2=setInterval(fn, repeatEvery); }, firstDelay); }; const stop=()=>{ clearTimeout(t1); clearInterval(t2); t1=t2=null; };
     btn.addEventListener('mousedown', start);
     btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); start(); }, {passive:false});
     ['mouseup','mouseleave','mouseout','blur','touchend','touchcancel'].forEach(ev=> btn.addEventListener(ev, stop));
@@ -929,40 +713,44 @@
   btnDown.addEventListener('click', ()=> moveSelection(1));
   btnPageUp.addEventListener('click', ()=> pageMove(-1));
   btnPageDown.addEventListener('click', ()=> pageMove(1));
-  btnPlaySel.addEventListener('click', ()=> { if (selectedIndex<0 && filtered.length) selectedIndex=0; const ch=filtered[selectedIndex]; if(ch) playChannel(ch); });
+  btnPlaySel.addEventListener('click', ()=>{ if(selectedIndex<0 && filtered.length) selectedIndex=0; const ch=filtered[selectedIndex]; if(ch) playChannel(ch); });
   attachHoldRepeat(btnUp, ()=> moveSelection(-1));
   attachHoldRepeat(btnDown, ()=> moveSelection(1));
   attachHoldRepeat(btnPageUp, ()=> pageMove(-1));
   attachHoldRepeat(btnPageDown, ()=> pageMove(1));
 
-  /* ========= Teclado (Smart TV) ========= */
-  window.addEventListener("keydown", (e)=>{
-    if(e.key==="ArrowUp"){ e.preventDefault(); moveSelection(-1); }
-    if(e.key==="ArrowDown"){ e.preventDefault(); moveSelection(1); }
-    if(e.key==="PageUp"){ e.preventDefault(); pageMove(-1); }
-    if(e.key==="PageDown"){ e.preventDefault(); pageMove(1); }
-    if(e.key==="Enter"){
-      if (locked){ e.preventDefault(); setProtectedLocked(false); }
-      else if (selectedIndex>=0){ e.preventDefault(); selectAndPlay(selectedIndex); }
-    }
-    if(e.key.toLowerCase?.()==="b"){ e.preventDefault(); setProtectedLocked(true); startCountdown(); }
+  focusBtn.addEventListener('click', ()=> { /* ya no hacemos scroll de la página, está fija */ });
+  toggleUIBtn.addEventListener('click', ()=> document.getElementById('topbar').classList.toggle('hidden'));
+  reloadBtn.addEventListener('click', ()=>{
+    if(!playerProtected.classList.contains('hidden') && iframeProtected.src && iframeProtected.src!=="about:blank"){ iframeProtected.src=iframeProtected.src; toast("Reload iframe"); }
+    if(!playerNormal.classList.contains('hidden') && (video.src||hls)){ if(hls){ hls.stopLoad(); hls.startLoad(); } else { video.src=video.src; } toast("Reload video"); }
+  });
+  toggleShieldBtn.addEventListener('click', ()=>{
+    const on=shield.style.display!=="none";
+    if(on){ shield.style.display="none"; toggleShieldBtn.textContent="🛡️ Escudo: OFF"; }
+    else { shield.style.display="grid"; toggleShieldBtn.textContent="🛡️ Escudo: ON"; }
   });
 
-  /* ========= Inicial ========= */
-  function init(){
-    setAutoPiPState(JSON.parse(localStorage.getItem(STORAGE_AUTOPIP) || 'true'));
-    const sv = parseFloat(localStorage.getItem(STORAGE_VOLUME) || "0.8");
-    vol.value = isNaN(sv) ? "0.8" : String(sv);
-    video.volume = parseFloat(vol.value);
+  /* =================== Teclado (Smart TV) =================== */
+  window.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowUp'){ e.preventDefault(); moveSelection(-1); }
+    if(e.key==='ArrowDown'){ e.preventDefault(); moveSelection(1); }
+    if(e.key==='PageUp'){ e.preventDefault(); pageMove(-1); }
+    if(e.key==='PageDown'){ e.preventDefault(); pageMove(1); }
+    if(e.key==='Enter'){ if(locked){ e.preventDefault(); setProtectedLocked(false); } else if(selectedIndex>=0){ e.preventDefault(); selectAndPlay(selectedIndex); } }
+    if(e.key.toLowerCase?.()==='b'){ e.preventDefault(); setProtectedLocked(true); startCountdown(); }
+  });
 
-    try{ favs = JSON.parse(localStorage.getItem(STORAGE_FAVS)||'[]'); }catch{ favs=[]; }
-    rebuildFavs();
+  /* =================== Init =================== */
+  function init(){
+    setAutoPiPState(JSON.parse(localStorage.getItem(STORAGE_AUTOPIP)||'true'));
+    const sv=parseFloat(localStorage.getItem(STORAGE_VOLUME)||"0.8"); vol.value=isNaN(sv)?"0.8":String(sv); video.volume=parseFloat(vol.value);
+    try{ favs=JSON.parse(localStorage.getItem(STORAGE_FAVS)||'[]'); }catch{ favs=[]; } rebuildFavs();
     buildCategories(); applyFilter();
   }
   init();
-  if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearHistory);
 
-  // Cierra Doc-PiP si sales de la página
+  // Cerrar Doc-PiP al salir
   window.addEventListener('pagehide', closeDocPiP);
   </script>
 </body>
