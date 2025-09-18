@@ -21,7 +21,7 @@
   button, .btn { cursor:pointer; font-weight:600; text-decoration:none; }
   button:hover, .btn:hover { background:#2a3a55; }
   .ok { background:#1f3d2b; border-color:#245c3c; } .ok:hover { background:#245c3c; }
-  .danger { background:#742a2a; border-color:#9b2c2c; } .danger:hover { background:#9b2c2c; }
+  .danger { background:#742a2a; border-color:#9b2c3c; } .danger:hover { background:#9b2c2c; }
   .muted { opacity:.85; }
   .badge { padding:4px 8px; border-radius:999px; background:#1f2b3d; border:1px solid #2b3a52; font-size:12px; }
 
@@ -29,8 +29,9 @@
   video, iframe { width:100%; height:100%; border:0; display:block; background:#000; object-fit:contain; }
 
   .list { display:grid; grid-template-columns: 1fr; gap:6px; margin-top:10px; max-height: 45vh; overflow:auto; }
-  .item { display:flex; align-items:center; gap:.6rem; padding:6px 8px; background:#101b2e; border:1px solid var(--line); border-radius:8px; cursor:pointer; }
+  .item { display:flex; align-items:center; gap:.6rem; padding:6px 8px; background:#101b2e; border:1px solid var(--line); border-radius:8px; cursor:pointer; transition:background .15s, outline-color .15s; }
   .item:hover { background:#15233a; }
+  .item.selected { outline:2px solid #2ea36a; background:#162a3f; }
   .logo { width:36px; height:36px; border-radius:6px; object-fit:cover; background:#0d1322; }
   .title { flex:1; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .tag { font-size:11px; padding:2px 6px; border-radius:999px; border:1px solid #2b3a52; }
@@ -45,7 +46,6 @@
   .panel { padding:14px 16px; border-radius:12px; background:#0f1725; border:1px solid var(--line); text-align:center; max-width:520px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
   .small { font-size:12px; }
   .count { font-variant-numeric: tabular-nums; }
-  .twoCol { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
   .hidden { display:none !important; }
   .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
   .chip { padding:4px 8px; border-radius:999px; border:1px solid #2b3a52; background:#1f2b3d; font-size:12px; cursor:pointer; }
@@ -74,7 +74,6 @@
     background:#111826; border:1px solid var(--line); border-radius:16px; padding:12px; display:none;
   }
   .search-panel.show { display:block; }
-  .search-row { display:flex; gap:.5rem; }
 
   /* Toast/status */
   .status {
@@ -82,46 +81,20 @@
     color:#cfe4ff; padding:8px 12px; border-radius:10px; font-size:13px; opacity:.95; z-index:70; display:none;
   }
 
-  /* ==== Historial de la lupa ==== */
-  .history-list {
-    margin-top: 8px;
-    max-height: 46vh;
-    overflow: auto;
-    display: grid;
-    gap: 6px;
-  }
-  .history-item {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
-    gap: 2px 8px;
-    padding: 8px 10px;
-    background:#101b2e;
-    border:1px solid #233044;
-    border-radius:10px;
-  }
-  .history-title {
-    grid-column: 1 / 2;
-    font-weight: 600;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .history-actions {
-    grid-column: 2 / 3;
-    display:flex; gap:6px; align-items:center; justify-content:flex-end;
-  }
-  .history-url {
-    grid-column: 1 / 2;
-    font-size: 12px; opacity:.85;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .history-meta {
-    grid-column: 2 / 3;
-    font-size: 11px; opacity:.7; text-align:right;
-  }
-  .history-empty {
-    padding:10px; text-align:center; font-size:12px; opacity:.7;
-    border:1px dashed #2b3a52; border-radius:10px;
-  }
+  /* Mini-Monitor (fallback si no hay Document PiP) */
+  #miniMon { position:fixed; right:10px; top:74px; width:360px; height:202px; background:#000; border:1px solid var(--line); border-radius:12px; overflow:hidden; z-index:65; box-shadow:0 10px 30px rgba(0,0,0,.4); }
+  #miniMon.hidden { display:none; }
+  #miniMon iframe { width:100%; height:100%; border:0; background:#000; }
+  #miniMon .close { position:absolute; top:6px; right:6px; font-size:14px; padding:4px 7px; border-radius:8px; border:1px solid #2b3a52; background:#111826; color:#fff; cursor:pointer; }
+
+  /* Historial de la lupa */
+  .history-list { margin-top: 8px; max-height: 46vh; overflow: auto; display: grid; gap: 6px; }
+  .history-item { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 2px 8px; padding: 8px 10px; background:#101b2e; border:1px solid #233044; border-radius:10px; }
+  .history-title { grid-column: 1 / 2; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-actions { grid-column: 2 / 3; display:flex; gap:6px; align-items:center; justify-content:flex-end; }
+  .history-url { grid-column: 1 / 2; font-size: 12px; opacity:.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-meta { grid-column: 2 / 3; font-size: 11px; opacity:.7; text-align:right; }
+  .history-empty { padding:10px; text-align:center; font-size:12px; opacity:.7; border:1px dashed #2b3a52; border-radius:10px; }
 </style>
 </head>
 <body>
@@ -134,7 +107,7 @@
       <a id="openTop" class="btn" target="_blank" rel="noopener">🗗 Abrir canal en ventana</a>
       <button id="btnLock" class="danger">Bloquear</button>
       <button id="btnUnlock" class="ok">Desbloquear</button>
-      <span class="small muted">Atajos: ⬆️/⬇️ lista · Enter desbloquea · B bloquea</span>
+      <span class="small muted">Atajos: ⬆️/⬇️ · PgUp/PgDn · Enter desbloquea · B bloquea</span>
     </div>
   </header>
 
@@ -142,6 +115,15 @@
     <aside>
       <div class="row">
         <input id="search" class="grow" type="text" placeholder="🔎 Buscar canal..." />
+      </div>
+
+      <!-- Flechas laterales + Play seleccionado -->
+      <div class="toolbar">
+        <button id="btnUp" title="Arriba">⬆️</button>
+        <button id="btnPlaySel" class="ok" title="Reproducir seleccionado">▶</button>
+        <button id="btnDown" title="Abajo">⬇️</button>
+        <button id="btnPageUp" title="Página arriba">⤒</button>
+        <button id="btnPageDown" title="Página abajo">⤓</button>
       </div>
 
       <!-- Presets -->
@@ -193,7 +175,7 @@
       <div id="playerProtected" class="stack hidden">
         <div class="wrapProtected" style="width:100%;height:100%;">
           <iframe id="iframeProtected"
-            allow="storage-access; autoplay; fullscreen; picture-in-picture"
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-read; clipboard-write; storage-access"
             sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
             referrerpolicy="no-referrer"></iframe>
 
@@ -214,44 +196,42 @@
       <div class="toolbar">
         <label class="small">Auto-desbloqueo: <input id="unlockSeconds" type="number" min="0" step="1" value="8" style="width:72px;"></label>
         <button id="btnApply">Aplicar</button>
-        <span class="small muted">Si un canal es una página (p.ej. tvporinternet2.com), usa el Player protegido para evitar popups y permitir cookies 3P.</span>
+        <span class="small muted">Si un canal es una página (p.ej. tvporinternet2.com), usa el Player protegido.</span>
       </div>
     </main>
   </div>
 
-  <footer style="padding:10px 16px; opacity:.65; font-size:12px; border-top:1px solid var(--line);">Mi TV Station Fusion · Soporte M3U/JSON · HLS.js cuando aplique · Player protegido con anti-clics/cookies 3P.</footer>
+  <footer style="padding:10px 16px; opacity:.65; font-size:12px; border-top:1px solid var(--line);">Mi TV Station Fusion · Soporte M3U/JSON · HLS.js · Player protegido.</footer>
 
   <!-- HUD flotante -->
   <div class="hud" id="hud">
-    <button id="pip" class="btn">📺 PiP: OFF</button>
-    <label>🔊 <input id="vol" type="range" min="0" max="1" step="0.05" value="0.6"></label>
+    <button id="pip" class="btn">📺 PiP: ON</button>
+    <label>🔊 <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8"></label>
     <button id="toggleShieldBtn" class="btn">🛡️ Escudo: ON</button>
     <button id="focusBtn" class="btn">🎯 Foco</button>
     <button id="reloadBtn" class="btn">⟳ Reload</button>
     <button id="toggleUIBtn" class="btn">🪄 UI</button>
   </div>
 
-  <!-- Lupa flotante -->
-  <div class="fab" id="fab" title="Buscar / Pegar URL">🔎</div>
+  <!-- Mini-Monitor (fallback si no hay Document PiP) -->
+  <div id="miniMon" class="hidden" aria-live="polite">
+    <button class="close" id="miniMonClose">✖</button>
+    <iframe id="miniMonFrame" allow="autoplay; fullscreen; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" referrerpolicy="no-referrer"></iframe>
+  </div>
 
-  <!-- Panel de búsqueda flotante -->
+  <!-- Lupa flotante + historial -->
+  <div class="fab" id="fab" title="Buscar / Pegar URL">🔎</div>
   <div class="search-panel" id="searchPanel">
-    <div class="search-row">
-      <input id="q" type="text" placeholder="Pega URL (.m3u8/.mp4 o página) o escribe búsqueda (https://…)" />
+    <div class="row" style="gap:.5rem;">
+      <input id="q" type="text" placeholder="Pega URL (.m3u8/.mp4 o página) o escribe búsqueda (https://…)" style="flex:1 1 auto;" />
       <button id="go" class="ok">Abrir</button>
       <button id="closeSearch" class="danger">✖</button>
     </div>
-
-    <!-- Historial -->
     <div class="row small" style="justify-content:space-between; margin-top:8px;">
       <strong>🕘 Historial</strong>
       <button id="clearHistory" class="danger">Limpiar</button>
     </div>
     <div id="historyList" class="history-list"></div>
-
-    <div style="margin-top:6px; font-size:12px; opacity:.8;">
-      Para <strong>PiP estable</strong> usa streams directos (.m3u8/.mp4). Para páginas con anuncios, usa <strong>Player protegido</strong>.
-    </div>
   </div>
 
   <div class="status" id="status"></div>
@@ -262,6 +242,8 @@
   const STORAGE_FAVS = 'mtv:favs';
   const STORAGE_LAST = 'mtv:last';
   const STORAGE_HISTORY = 'mtv:searchHistory';
+  const STORAGE_AUTOPIP = 'mtv:autoPiP';
+  const STORAGE_VOLUME  = 'mtv:volume';
   const MAX_HISTORY = 50;
 
   let channels = []; // {name, url, logo?, group?}
@@ -278,6 +260,13 @@
   const btnLoadPreset = document.getElementById('btnLoadPreset');
   const fileInput = document.getElementById('fileInput');
   const btnClearList = document.getElementById('btnClearList');
+
+  // Flechas laterales
+  const btnUp = document.getElementById('btnUp');
+  const btnDown = document.getElementById('btnDown');
+  const btnPageUp = document.getElementById('btnPageUp');
+  const btnPageDown = document.getElementById('btnPageDown');
+  const btnPlaySel = document.getElementById('btnPlaySel');
 
   const btnAddFav = document.getElementById('btnAddFav');
   const favSelect = document.getElementById('favSelect');
@@ -304,7 +293,7 @@
   const btnApply = document.getElementById('btnApply');
 
   // HUD + Lupa + Status
-  const pipBtn = document.getElementById('pip');
+  const pipBtn = document.getElementById('pip');   // Auto-PiP toggle
   const vol = document.getElementById('vol');
   const toggleShieldBtn = document.getElementById('toggleShieldBtn');
   const focusBtn = document.getElementById('focusBtn');
@@ -323,9 +312,58 @@
   /* ========= Config ========= */
   let AUTO_UNLOCK_SECONDS = 8, locked = true, timerInt = null, secondsLeft = 8;
   let hls = null;
-  let wantPiP = false;
-  let fabFollow = true; // la lupa te sigue
+  let autoPiP = JSON.parse(localStorage.getItem(STORAGE_AUTOPIP) || 'true'); // ON por defecto
   let uiHiddenTimer = null;
+
+  /* ========= Doc-PiP + Mini-Monitor ========= */
+  let docPipWin = null;
+  async function openDocPiPForPage(url){
+    if(!('documentPictureInPicture' in window)) return false;
+    try{
+      if (docPipWin && !docPipWin.closed) { docPipWin.close(); }
+      docPipWin = await documentPictureInPicture.requestWindow({ width: 480, height: 270 });
+      const d = docPipWin.document;
+      d.write(`<!doctype html><html><head><meta charset="utf-8">
+        <style>
+          html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,Segoe UI,Roboto,Arial;}
+          #bar{position:absolute;left:0;right:0;top:0;height:28px;background:rgba(17,24,38,.85);display:flex;align-items:center;gap:8px;padding:0 10px;font-size:12px;}
+          #t{flex:1 1 auto;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          #x{background:#1f2b3d;border:1px solid #2b3a52;color:#e9eef5;border-radius:8px;padding:3px 8px;cursor:pointer}
+          #wrap{position:absolute;inset:28px 0 0 0;}
+          iframe{width:100%;height:100%;border:0;background:#000}
+        </style></head>
+        <body>
+          <div id="bar"><div id="t">Monitor</div><button id="x">Cerrar</button></div>
+          <div id="wrap"><iframe id="f" allow="autoplay; fullscreen; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" referrerpolicy="no-referrer"></iframe></div>
+          <script>
+            const f=document.getElementById('f'); const t=document.getElementById('t'); const x=document.getElementById('x');
+            window.addEventListener('message', ev=>{ if(ev.data&&ev.data.type==='pip:load'){ f.src=ev.data.url; t.textContent=ev.data.title||'Monitor'; }});
+            x.addEventListener('click', ()=> window.close());
+          <\/script>
+        </body></html>`);
+      d.close();
+      // pasa el URL actual
+      docPipWin.postMessage({ type:'pip:load', url, title:'Monitor' }, '*');
+      // si se cierra, limpia handler
+      const i = setInterval(()=>{ if(!docPipWin || docPipWin.closed){ clearInterval(i); docPipWin=null; } }, 1000);
+      return true;
+    }catch(e){ console.warn('Doc-PiP error', e); docPipWin=null; return false; }
+  }
+  function closeDocPiP(){ try{ if(docPipWin && !docPipWin.closed) docPipWin.close(); }catch{} docPipWin=null; }
+  function updateDocPiP(url, title){ try{ if(docPipWin && !docPipWin.closed){ docPipWin.postMessage({type:'pip:load', url, title}, '*'); } }catch{} }
+
+  const miniMon = document.getElementById('miniMon');
+  const miniMonFrame = document.getElementById('miniMonFrame');
+  document.getElementById('miniMonClose').addEventListener('click', ()=>{ miniMon.classList.add('hidden'); });
+
+  function showMiniMon(url){
+    miniMonFrame.src = url;
+    miniMon.classList.remove('hidden');
+  }
+  function hideMiniMon(){
+    miniMon.classList.add('hidden');
+    miniMonFrame.src = 'about:blank';
+  }
 
   /* ========= Helpers ========= */
   function toast(msg, ms=1600){
@@ -348,13 +386,8 @@
   }
 
   /* ========= Historial (lupa) ========= */
-  function getHistory(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_HISTORY) || '[]'); }
-    catch { return []; }
-  }
-  function setHistory(arr){
-    localStorage.setItem(STORAGE_HISTORY, JSON.stringify(arr));
-  }
+  function getHistory(){ try { return JSON.parse(localStorage.getItem(STORAGE_HISTORY) || '[]'); } catch { return []; } }
+  function setHistory(arr){ localStorage.setItem(STORAGE_HISTORY, JSON.stringify(arr)); }
   function saveHistory(url, name){
     if(!url) return;
     name = name || deriveNameFromUrl(url);
@@ -363,39 +396,21 @@
     const now = Date.now();
     if(i >= 0){
       const e = hist.splice(i,1)[0];
-      e.ts = now;
-      e.count = (e.count||0) + 1;
-      e.name = name || e.name;
+      e.ts = now; e.count = (e.count||0) + 1; e.name = name || e.name;
       hist.unshift(e);
-    } else {
-      hist.unshift({ url, name, ts: now, count: 1 });
-    }
+    } else { hist.unshift({ url, name, ts: now, count: 1 }); }
     if(hist.length > MAX_HISTORY) hist = hist.slice(0, MAX_HISTORY);
     setHistory(hist);
   }
-  function removeHistory(url){
-    const hist = getHistory().filter(h => h.url !== url);
-    setHistory(hist);
-    renderHistory(q?.value?.trim() || '');
-  }
-  function clearHistory(){
-    setHistory([]);
-    renderHistory('');
-  }
-  function fmtTime(ts){
-    try { return new Date(ts).toLocaleString(); } catch { return ''; }
-  }
+  function removeHistory(url){ const hist = getHistory().filter(h => h.url !== url); setHistory(hist); renderHistory(q?.value?.trim() || ''); }
+  function clearHistory(){ setHistory([]); renderHistory(''); }
+  function fmtTime(ts){ try { return new Date(ts).toLocaleString(); } catch { return ''; } }
   function renderHistory(filter=''){
     if(!historyList) return;
     const f = (filter||'').toLowerCase();
-    const rows = getHistory().filter(h =>
-      !f || (h.name?.toLowerCase().includes(f) || h.url.toLowerCase().includes(f))
-    );
+    const rows = getHistory().filter(h => !f || (h.name?.toLowerCase().includes(f) || h.url.toLowerCase().includes(f)));
     historyList.innerHTML = '';
-    if(!rows.length){
-      historyList.innerHTML = `<div class="history-empty">Sin historial</div>`;
-      return;
-    }
+    if(!rows.length){ historyList.innerHTML = `<div class="history-empty">Sin historial</div>`; return; }
     for(const h of rows){
       const item = document.createElement('div');
       item.className = 'history-item';
@@ -408,10 +423,7 @@
         <div class="history-url" title="${h.url}">${h.url}</div>
         <div class="history-meta">Visto: ${fmtTime(h.ts)} · ${(h.count||1)}×</div>
       `;
-      item.querySelector('.play').onclick = () => {
-        playChannel({ name: h.name, url: h.url });
-        closePanel();
-      };
+      item.querySelector('.play').onclick = () => { playChannel({ name: h.name, url: h.url }); closePanel(); };
       item.querySelector('.del').onclick = () => removeHistory(h.url);
       historyList.appendChild(item);
     }
@@ -621,13 +633,19 @@
     renderList();
   }
 
+  function updateSelectedClass(){
+    listEl.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+    if (selectedIndex>=0){
+      const sel = listEl.querySelector(`.item[data-index="${selectedIndex}"]`);
+      if (sel) sel.classList.add('selected');
+    }
+  }
+
   function renderList(){
     listEl.innerHTML='';
     filtered.forEach((c, idx)=>{
       const div = document.createElement('div');
-      div.className='item';
-      div.tabIndex=0;
-      div.dataset.index=idx;
+      div.className='item'; div.tabIndex=0; div.dataset.index=idx;
       const img = document.createElement('img'); img.className='logo'; img.alt='logo';
       img.src = c.logo || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2236%22 height=%2236%22%3E%3Crect width=%2236%22 height=%2236%22 fill=%22%230d1322%22/%3E%3C/svg%3E';
       const name = document.createElement('div'); name.className='title'; name.textContent = c.name;
@@ -639,6 +657,14 @@
       listEl.appendChild(div);
     });
     selectedIndex = filtered.length ? Math.max(0, Math.min(selectedIndex, filtered.length-1)) : -1;
+    updateSelectedClass();
+  }
+
+  function itemsPerPage(){
+    const first = listEl.querySelector('.item');
+    const hItem = first ? first.offsetHeight + 6 : 52;
+    const hList = listEl.clientHeight || 360;
+    return Math.max(1, Math.floor(hList / hItem));
   }
 
   function moveSelection(delta){
@@ -647,9 +673,18 @@
     selectedIndex = Math.max(0, Math.min(filtered.length-1, selectedIndex));
     const el = listEl.querySelector(`.item[data-index="${selectedIndex}"]`);
     if (el){ el.scrollIntoView({block:'nearest'}); el.focus(); }
+    updateSelectedClass();
   }
 
-  function selectAndPlay(idx){ selectedIndex = idx; const ch = filtered[idx]; if (!ch) return; playChannel(ch); }
+  function pageMove(deltaPages){ moveSelection(deltaPages * itemsPerPage()); }
+
+  function selectAndPlay(idx){
+    selectedIndex = idx;
+    const ch = filtered[idx];
+    if (!ch) return;
+    updateSelectedClass();
+    playChannel(ch);
+  }
 
   /* ========= Tabs ========= */
   function setTab(which){
@@ -677,51 +712,94 @@
   function centerFocus(){ window.scrollTo({top:0,left:0,behavior:"smooth"}); hideUISoon(); }
 
   async function tryStartPiP(){
-    if(!document.pictureInPictureEnabled){ toast("PiP no soportado"); return false; }
-    if(video.readyState < 2){ try{ await video.play(); }catch{} }
+    if(!document.pictureInPictureEnabled){ return false; }
     try{
       if(document.pictureInPictureElement !== video){
         await video.requestPictureInPicture();
       }
-      pipBtn.textContent = "📺 PiP: ON"; wantPiP = true; return true;
-    }catch(e){ console.warn("PiP fail", e); toast("No se pudo activar PiP"); return false; }
+      return true;
+    }catch(e){ console.warn("PiP fail", e); return false; }
   }
-  async function stopPiP(){
-    try{ if(document.pictureInPictureElement){ await document.exitPictureInPicture(); } pipBtn.textContent="📺 PiP: OFF"; wantPiP=false; }catch{}
+  async function stopPiP(){ try{ if(document.pictureInPictureElement){ await document.exitPictureInPicture(); } }catch{} }
+
+  // Auto-PiP toggle (persistente)
+  function setAutoPiPState(on){
+    autoPiP = !!on;
+    localStorage.setItem(STORAGE_AUTOPIP, JSON.stringify(autoPiP));
+    pipBtn.textContent = `📺 PiP: ${autoPiP ? 'ON' : 'OFF'}`;
+    if(!autoPiP){ stopPiP(); closeDocPiP(); hideMiniMon(); }
   }
-  pipBtn.addEventListener("click", async ()=>{ if(document.pictureInPictureElement){ await stopPiP(); } else { await tryStartPiP(); } });
-  video.addEventListener("loadedmetadata", ()=>{ if(wantPiP) tryStartPiP(); });
-  video.addEventListener("enterpictureinpicture", ()=>{ pipBtn.textContent = "📺 PiP: ON"; wantPiP = true; });
-  video.addEventListener("leavepictureinpicture", ()=>{ pipBtn.textContent = "📺 PiP: OFF"; wantPiP = false; });
-  vol.addEventListener("input", ()=> { video.volume = parseFloat(vol.value||"0.6"); });
+  pipBtn.addEventListener("click", ()=> setAutoPiPState(!autoPiP));
+
+  video.addEventListener("enterpictureinpicture", ()=>{ pipBtn.textContent = "📺 PiP: ON"; });
+  video.addEventListener("leavepictureinpicture", ()=>{ if(!autoPiP) pipBtn.textContent = "📺 PiP: OFF"; });
+
+  // Volumen persistente
+  function applySavedVolume(){
+    const sv = parseFloat(localStorage.getItem(STORAGE_VOLUME) || vol.value || "0.8");
+    vol.value = isNaN(sv) ? "0.8" : sv.toString();
+    video.volume = parseFloat(vol.value);
+  }
+  vol.addEventListener("input", ()=>{
+    const v = parseFloat(vol.value||"0.8");
+    localStorage.setItem(STORAGE_VOLUME, String(v));
+    video.volume = v;
+  });
+
+  // Autoplay con audio
+  async function ensurePlayWithSound(){
+    applySavedVolume();
+    video.muted = false;
+    try { await video.play(); return; }
+    catch (e) {
+      try {
+        video.muted = true;
+        await video.play();
+        toast("Reproduciendo en silencio. Toca una tecla/clic para activar audio.");
+        const activate = () => {
+          try { video.muted = false; applySavedVolume(); } catch {}
+          document.removeEventListener('pointerdown', activate);
+          document.removeEventListener('keydown', activate);
+          if (autoPiP) tryStartPiP();
+        };
+        document.addEventListener('pointerdown', activate, { once:true });
+        document.addEventListener('keydown', activate, { once:true });
+      } catch (err) { console.warn('Autoplay bloqueado', err); }
+    }
+  }
 
   /* ========= Reproducción canal ========= */
   function playChannel(ch){
     if(!ch || !ch.url) return;
-    saveHistory(ch.url, ch.name); // ⬅️ guarda en historial cada reproducción
+    saveHistory(ch.url, ch.name);
     localStorage.setItem(STORAGE_LAST, JSON.stringify(ch));
     openTop.href = ch.url;
 
     if (isWebPage(ch.url)){
-      // Página => Player protegido con escudo + countdown
       setTab('protected'); setProtectedLocked(true); startCountdown();
       iframeProtected.src = 'about:blank';
       iframeProtected.setAttribute('sandbox','allow-scripts allow-same-origin allow-forms allow-presentation');
       iframeProtected.src = ch.url;
       centerFocus();
       toast("Cargando (Página)");
+
+      // *** Monitor siempre visible para páginas ***
+      if (autoPiP){
+        closeDocPiP(); hideMiniMon();
+        openDocPiPForPage(ch.url).then(ok=>{
+          if(!ok){ showMiniMon(ch.url); }
+        });
+      }
       return;
     }
 
-    // Stream directo => Player normal (Video preferente)
-    setTab('normal');
-    iframeNormal.classList.add('hidden');
-    video.classList.remove('hidden');
+    // Stream directo => Player normal (Video)
+    setTab('normal'); iframeNormal.classList.add('hidden'); video.classList.remove('hidden');
     clearHls();
 
     if (isM3U8(ch.url)){
-      if (video.canPlayType('application/vnd.apple.mpegurl')){
-        video.src = ch.url; video.play().catch(()=>{});
+      if (video.canPlayType('application/vnd.apple.mpegURL')){
+        video.src = ch.url; ensurePlayWithSound().then(()=> { if (autoPiP) tryStartPiP(); });
       } else if (Hls.isSupported()){
         hls = new Hls({
           manifestLoadingTimeOut:30000, manifestLoadingMaxRetry:6, manifestLoadingRetryDelay:1000,
@@ -731,7 +809,7 @@
           backBufferLength:30
         });
         hls.loadSource(ch.url); hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, ()=> video.play().catch(()=>{}));
+        hls.on(Hls.Events.MANIFEST_PARSED, async ()=>{ await ensurePlayWithSound(); if (autoPiP) tryStartPiP(); });
         hls.on(Hls.Events.ERROR, (ev, data)=>{
           const { fatal } = data||{};
           if (fatal){
@@ -740,15 +818,15 @@
             else { clearHls(); playChannel(ch); }
           }
         });
-      } else { video.src = ch.url; video.play().catch(()=>{}); }
+      } else {
+        video.src = ch.url; ensurePlayWithSound().then(()=> { if (autoPiP) tryStartPiP(); });
+      }
     } else {
-      // mp4 u otros
-      video.src = ch.url; video.play().catch(()=>{});
+      video.src = ch.url; ensurePlayWithSound().then(()=> { if (autoPiP) tryStartPiP(); });
     }
 
-    // volumen auto y PiP reintento si estaba ON
-    video.volume = parseFloat(vol.value||"0.6");
-    if (wantPiP) tryStartPiP();
+    // Al dejar un stream, cierra mini/Doc-PiP de páginas previas
+    closeDocPiP(); hideMiniMon();
 
     centerFocus();
     toast("Reproduciendo (Video)");
@@ -804,7 +882,7 @@
     closePanel();
   });
 
-  // Drag y “seguir cursor”
+  // Drag básico para la lupa
   (function(){
     let dragging=false, offX=0, offY=0;
     fab.addEventListener("mousedown", e=>{ dragging=true; offX=e.offsetX; offY=e.offsetY; e.preventDefault(); });
@@ -814,18 +892,8 @@
         fab.style.top   = Math.max(8, e.clientY-offY) + "px";
         fab.style.right = "auto";
       }
-      if(fabFollow && !dragging){
-        const rect = fab.getBoundingClientRect();
-        const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
-        const nx = cx + (e.clientX - cx) * 0.12;
-        const ny = cy + (e.clientY - cy) * 0.12;
-        fab.style.left = (nx - rect.width/2) + "px";
-        fab.style.top  = (ny - rect.height/2) + "px";
-        fab.style.right = "auto";
-      }
     });
     document.addEventListener("mouseup", ()=> dragging=false);
-    fab.addEventListener("dblclick", ()=> { fabFollow = !fabFollow; toast(`Lupa seguir: ${fabFollow? "ON":"OFF"}`); });
   })();
 
   /* ========= Encabezado auto-oculto + HUD ========= */
@@ -848,10 +916,31 @@
     else { shield.style.display="grid"; toggleShieldBtn.textContent="🛡️ Escudo: ON"; }
   });
 
+  /* ========= Flechas laterales: click y mantener presionado ========= */
+  function attachHoldRepeat(btn, fn, firstDelay=350, repeatEvery=100){
+    let t1=null, t2=null;
+    const start = ()=>{ fn(); t1=setTimeout(()=>{ t2=setInterval(fn, repeatEvery); }, firstDelay); };
+    const stop  = ()=>{ clearTimeout(t1); clearInterval(t2); t1=t2=null; };
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); start(); }, {passive:false});
+    ['mouseup','mouseleave','mouseout','blur','touchend','touchcancel'].forEach(ev=> btn.addEventListener(ev, stop));
+  }
+  btnUp.addEventListener('click', ()=> moveSelection(-1));
+  btnDown.addEventListener('click', ()=> moveSelection(1));
+  btnPageUp.addEventListener('click', ()=> pageMove(-1));
+  btnPageDown.addEventListener('click', ()=> pageMove(1));
+  btnPlaySel.addEventListener('click', ()=> { if (selectedIndex<0 && filtered.length) selectedIndex=0; const ch=filtered[selectedIndex]; if(ch) playChannel(ch); });
+  attachHoldRepeat(btnUp, ()=> moveSelection(-1));
+  attachHoldRepeat(btnDown, ()=> moveSelection(1));
+  attachHoldRepeat(btnPageUp, ()=> pageMove(-1));
+  attachHoldRepeat(btnPageDown, ()=> pageMove(1));
+
   /* ========= Teclado (Smart TV) ========= */
   window.addEventListener("keydown", (e)=>{
     if(e.key==="ArrowUp"){ e.preventDefault(); moveSelection(-1); }
     if(e.key==="ArrowDown"){ e.preventDefault(); moveSelection(1); }
+    if(e.key==="PageUp"){ e.preventDefault(); pageMove(-1); }
+    if(e.key==="PageDown"){ e.preventDefault(); pageMove(1); }
     if(e.key==="Enter"){
       if (locked){ e.preventDefault(); setProtectedLocked(false); }
       else if (selectedIndex>=0){ e.preventDefault(); selectAndPlay(selectedIndex); }
@@ -860,17 +949,21 @@
   });
 
   /* ========= Inicial ========= */
-  function loadFavs(){ try{ favs = JSON.parse(localStorage.getItem(STORAGE_FAVS)||'[]'); }catch{ favs=[]; } rebuildFavs(); }
-  function restoreLast(){ try{ const last = JSON.parse(localStorage.getItem(STORAGE_LAST)||'null'); if(last && last.url){ channels.push(last); applyFilter(); const idx=filtered.findIndex(x=>x.url===last.url); if(idx>=0) selectAndPlay(idx); } }catch{} }
   function init(){
-    loadFavs(); buildCategories(); applyFilter();
-    vol.dispatchEvent(new Event("input")); // set volume default
+    setAutoPiPState(JSON.parse(localStorage.getItem(STORAGE_AUTOPIP) || 'true'));
+    const sv = parseFloat(localStorage.getItem(STORAGE_VOLUME) || "0.8");
+    vol.value = isNaN(sv) ? "0.8" : String(sv);
+    video.volume = parseFloat(vol.value);
+
+    try{ favs = JSON.parse(localStorage.getItem(STORAGE_FAVS)||'[]'); }catch{ favs=[]; }
+    rebuildFavs();
+    buildCategories(); applyFilter();
   }
   init();
-
-  // Botones preset / archivos (ya tienen listeners arriba)
-  btnLoadPreset.addEventListener('click', ()=>{ const v=presetSelect.value; if(v) loadPreset(v); });
   if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearHistory);
+
+  // Cierra Doc-PiP si sales de la página
+  window.addEventListener('pagehide', closeDocPiP);
   </script>
 </body>
 </html>
