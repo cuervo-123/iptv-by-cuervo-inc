@@ -59,9 +59,6 @@
   .danger { background:#742a2a; border-color:#9b2c2c; } .danger:hover { background:#9b2c2c; }
 
   .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; }
-  .chips { display:flex; flex-wrap:wrap; gap:6px; }
-  .chip { padding:4px 8px; border-radius:999px; border:1px solid #2b3a52; background:#1f2b3d; font-size:12px; cursor:pointer; }
-  .chip:hover { background:#2a3a55; }
 
   /* Lista: SIN vh; llena el espacio con flex */
   #list{
@@ -92,7 +89,7 @@
   .count { font-variant-numeric: tabular-nums; }
   .hidden { display:none !important; }
 
-  /* HUD flotante */
+  /* HUD flotante (solo canales) */
   .hud {
     position:fixed; right:10px; bottom:calc(var(--footer-h) + 10px); display:flex; gap:.5rem; align-items:center;
     background:rgba(17,24,38,.88); border:1px solid var(--line); border-radius:12px; padding:6px 8px; z-index:40; backdrop-filter: blur(4px);
@@ -109,10 +106,11 @@
   }
   .fab:active { cursor:grabbing; transform:scale(.98); }
 
-  /* Panel de búsqueda flotante */
+  /* Panel de búsqueda flotante — SIEMPRE visible dentro del viewport */
   .search-panel {
     position:fixed; left:50%; top:calc(var(--topbar-h) + 20px); transform:translateX(-50%);
     width:min(860px,92vw); z-index:60; background:#111826; border:1px solid var(--line); border-radius:16px; padding:12px; display:none;
+    max-height:clamp(320px, 70vh, 720px); overflow:auto; /* <- evita que se salga del monitor */
   }
   .search-panel.show { display:block; }
 
@@ -135,6 +133,15 @@
   .history-actions { grid-column: 2 / 3; display:flex; gap:6px; align-items:center; justify-content:flex-end; }
   .history-url { grid-column: 1 / 2; font-size: 12px; opacity:.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .history-meta { grid-column: 2 / 3; font-size: 11px; opacity:.7; text-align:right; }
+
+  /* Drawer de Categorías (aislado del flujo de canales) */
+  .cats-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter:blur(2px); z-index:55; display:none; }
+  .cats-backdrop.show{ display:block; }
+  .cats-panel{ position:absolute; left:12px; top:calc(var(--topbar-h) + 12px); bottom:calc(var(--footer-h) + 12px); width:min(320px, 92vw); background:#101726; border:1px solid var(--line); border-radius:12px; padding:12px; overflow:auto; }
+  .cats-title{ margin:0 0 8px; font-size:14px; font-weight:700; opacity:.9; }
+  .cats-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { padding:6px 10px; border-radius:999px; border:1px solid #2b3a52; background:#1f2b3d; font-size:12px; cursor:pointer; }
+  .chip:hover { background:#2a3a55; }
 
   /* Footer fijo para estabilidad */
   footer{
@@ -163,6 +170,7 @@
     <aside>
       <div class="row">
         <input id="search" class="grow" type="text" placeholder="🔎 Buscar canal..." />
+        <button id="btnCats" title="Categorías" class="btn">🗂️ Categorías</button>
       </div>
 
       <!-- Flechas laterales + Play seleccionado -->
@@ -194,10 +202,7 @@
         <button id="btnClearList" class="danger">Limpiar listado</button>
       </div>
 
-      <!-- Chips -->
-      <div id="chips" class="chips"></div>
-
-      <!-- Listado -->
+      <!-- Listado (SOLO canales; categorías están aisladas en el drawer) -->
       <div id="list" class="list" tabindex="0" aria-label="Listado de canales"></div>
 
       <!-- Favoritos -->
@@ -269,6 +274,17 @@
             referrerpolicy="no-referrer"></iframe>
   </div>
 
+  <!-- Drawer de categorías -->
+  <div class="cats-backdrop" id="catsDrawer">
+    <div class="cats-panel">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h3 class="cats-title">🗂️ Categorías</h3>
+        <button id="closeCats" class="danger">✖</button>
+      </div>
+      <div id="chips" class="cats-grid"></div>
+    </div>
+  </div>
+
   <!-- Lupa + historial -->
   <div class="fab" id="fab" title="Buscar / Pegar URL">🔎</div>
   <div class="search-panel" id="searchPanel">
@@ -333,6 +349,8 @@
   const statusBox=document.getElementById('status');
   const miniMon=document.getElementById('miniMon'), miniMonFrame=document.getElementById('miniMonFrame');
 
+  const catsDrawer=document.getElementById('catsDrawer'), btnCats=document.getElementById('btnCats'), closeCats=document.getElementById('closeCats');
+
   /* =================== Helpers =================== */
   function toast(msg, ms=1600){ statusBox.textContent=msg; statusBox.style.display="block"; clearTimeout(statusBox._t); statusBox._t=setTimeout(()=>statusBox.style.display="none", ms); }
   function isM3U8(url){ return /\.m3u8(\?|$)/i.test(url); }
@@ -349,7 +367,7 @@
   function fmtTime(ts){ try{ return new Date(ts).toLocaleString(); }catch{ return ''; } }
   function renderHistory(filter=''){ const f=(filter||'').toLowerCase(); const rows=getHistory().filter(h=>!f || (h.name?.toLowerCase().includes(f) || h.url.toLowerCase().includes(f))); historyList.innerHTML=''; if(!rows.length){ historyList.innerHTML='<div class="history-empty">Sin historial</div>'; return; } for(const h of rows){ const item=document.createElement('div'); item.className='history-item'; item.innerHTML=`<div class="history-title" title="${h.name||''}">${h.name||'Canal'}</div><div class="history-actions"><button class="ok play">▶</button><button class="danger del">🗑️</button></div><div class="history-url" title="${h.url}">${h.url}</div><div class="history-meta">Visto: ${fmtTime(h.ts)} · ${(h.count||1)}×</div>`; item.querySelector('.play').onclick=()=>{ playChannel({name:h.name,url:h.url}); closePanel(); }; item.querySelector('.del').onclick=()=>removeHistory(h.url); historyList.appendChild(item); } }
 
-  /* =================== Preset rápido =================== */
+  /* =================== Preset rápido (recortado de ejemplo) =================== */
   const PRESET_TVPORINTERNET2 = [
     "https://www.tvporinternet2.com/el-gourmet-en-vivo-por-internet.html",
     "https://www.tvporinternet2.com/distrito-comedia-en-vivo-por-internet.html",
@@ -690,17 +708,24 @@
   searchEl.addEventListener('input', applyFilter);
 
   /* =================== Lupa =================== */
-  function openSearch(x,y){
+  function openSearch(){
     searchPanel.classList.add("show");
-    if(x!=null && y!=null){ searchPanel.style.left=x+"px"; searchPanel.style.top=(y+20)+"px"; searchPanel.style.transform="translateX(-50%)"; }
-    else { searchPanel.style.left="50%"; searchPanel.style.top="calc(var(--topbar-h) + 20px)"; searchPanel.style.transform="translateX(-50%)"; }
+    searchPanel.style.left="50%";
+    searchPanel.style.top="calc(var(--topbar-h) + 20px)";
+    searchPanel.style.transform="translateX(-50%)";
     renderHistory(''); setTimeout(()=> q.focus(), 50);
   }
   function closePanel(){ searchPanel.classList.remove("show"); }
-  fab.addEventListener('click', (e)=> openSearch(e.clientX, e.clientY));
+  fab.addEventListener('click', openSearch);
   closeSearch.addEventListener('click', closePanel);
   q.addEventListener('input', ()=> renderHistory(q.value.trim()));
   go.addEventListener('click', ()=>{ const u=q.value.trim(); if(!u) return; saveHistory(u, deriveNameFromUrl(u)); playChannel({name:deriveNameFromUrl(u), url:u}); closePanel(); });
+  clearHistoryBtn.addEventListener('click', clearHistory);
+
+  /* =================== Drawer Categorías =================== */
+  btnCats.addEventListener('click', ()=> catsDrawer.classList.add('show'));
+  closeCats.addEventListener('click', ()=> catsDrawer.classList.remove('show'));
+  catsDrawer.addEventListener('click', (e)=>{ if(e.target===catsDrawer) catsDrawer.classList.remove('show'); });
 
   /* =================== HUD / Botones =================== */
   function attachHoldRepeat(btn, fn, firstDelay=350, repeatEvery=100){
